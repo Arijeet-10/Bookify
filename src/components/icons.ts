@@ -26,7 +26,8 @@ import {
   X,
   Workflow,
   Calendar,
-  MapPin
+  MapPin,
+  ThumbsUp
 } from 'lucide-react';
 import React from 'react';
 
@@ -73,6 +74,7 @@ const Icons = {
     React.createElement('path', {d: 'm12 2 3.09 6.26 6.91.5-5 5.05 1.18 6.88L12 16.47l-6.18 3.25 1.18-6.88-5-5.05 6.91-.5L12 2z'})
     )
   ),
+  thumbsup: ThumbsUp,
 };
 
 export {Icons};

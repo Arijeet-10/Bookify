@@ -11,32 +11,33 @@ import {useRouter} from 'next/navigation';
 import {Icons} from '@/components/icons';
 import {suggestServiceProvider} from '@/ai/flows/suggest-service-provider';
 import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const serviceCategories = [
   {
     id: '1',
     name: 'Dental & Orthodontics',
-    image: '/images/dental.jpg',
+    image: 'https://picsum.photos/200/300',
   },
   {
     id: '2',
     name: 'Health & Fitness',
-    image: '/images/health.jpg',
+    image: 'https://picsum.photos/200/301',
   },
   {
     id: '3',
     name: 'Professional Services',
-    image: '/images/professional.jpg',
+    image: 'https://picsum.photos/200/302',
   },
   {
     id: '4',
     name: 'Other',
-    image: '/images/other.jpg',
+    image: 'https://picsum.photos/200/303',
   },
   {
     id: '5',
     name: 'Barbershop',
-    image: '/images/barbershop.jpg',
+    image: 'https://picsum.photos/200/304',
   },
 ];
 
@@ -111,7 +112,7 @@ const Home = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-700 dark:text-gray-300">
       {/* Header with Logo */}
-      <header className="p-4 flex justify-center" style={{ backgroundColor: '#152226' }}>
+      <header className="p-4 flex flex-col" style={{ backgroundColor: '#152226' }}>
         <div className="max-w-md w-full flex flex-col">
           <div className="flex justify-center mb-6 text-white font-bold">
             Bookify
@@ -128,69 +129,71 @@ const Home = () => {
             />
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-grow">
         {/* Service Categories - circular images with text below */}
-        <section className="mb-8 p-4 pb-8 h-64" style={{ backgroundColor: '#152226' }}>
+        <section className="mb-8 p-4 pb-8 h-40 flex items-center" >
           <h2 className="text-2xl font-semibold mb-4 text-white">
             Service Categories
           </h2>
-          <div className="flex overflow-x-auto space-x-4 ">
-            {serviceCategories.map(category => (
-              <div key={category.id} className="flex-shrink-0">
-                <div className="w-32 h-32 flex flex-col items-center p-2 bg-transparent">
-                  <Avatar className=" w-20 h-20">
-                    <AvatarImage src={category.image} alt={category.name}  className='object-cover'/>
-                    <AvatarFallback>{category.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-sm text-center mt-2 text-white">{category.name}</div>
+          <ScrollArea className="w-full">
+            <div className="flex space-x-4 p-2">
+              {serviceCategories.map(category => (
+                <div key={category.id} className="flex-shrink-0">
+                  <Card className="w-32 h-32 flex flex-col items-center justify-center p-2 hover:shadow-md transition-shadow duration-300 dark:bg-secondary dark:border-muted">
+                    <Avatar className="mb-2 w-20 h-20">
+                      <AvatarImage src={category.image} alt={category.name} className='object-cover' />
+                      <AvatarFallback>{category.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <CardTitle className="text-sm text-center text-primary dark:text-primary">
+                      {category.name}
+                    </CardTitle>
+                  </Card>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </section>
+      </header>
 
+      {/* Main Content */}
+      <main className="flex-grow p-4">
         {/* Special Offers Section */}
-        <section className="mb-8 p-6">
+        <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
             Special Offers
           </h2>
           <div className="flex overflow-x-auto space-x-4 pb-8">
             {specialOffers.map(offer => (
               <div key={offer.id} className="flex-shrink-0 w-64">
-              <div className="relative">
-                <img
-                  src={offer.imageUrl}
-                  alt={offer.providerName}
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1">
-                  <div className="flex flex-col items-end ">
-                    <span className="text-sm font-bold text-white">{offer.rating}</span>
-                    <span className="text-xs text-white">{offer.reviews}</span>
+                <div className="relative">
+                  <img
+                    src={offer.imageUrl}
+                    alt={offer.providerName}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1">
+                    <div className="flex flex-col items-end">
+                      <span className="text-sm font-bold text-white">{offer.rating}</span>
+                      <span className="text-xs text-white">{offer.reviews}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    {offer.providerName}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">{offer.address}</p>
+                  <div className="flex items-center mt-2 justify-between">
+                    <span className="text-xs bg-teal-500 bg-opacity-20 text-teal-500 px-3 py-1 rounded-full flex items-center">
+                      <Icons.thumbsup className="w-4 h-4 mr-1" />
+                      {offer.discount}
+                    </span>
+                    <button className="flex items-center justify-center w-8 h-8 rounded-full bg-white">
+                      <Icons.share className="w-5 h-5 text-black" fill="currentColor" />
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className="mt-2">
-                <h3 className="text-xl font-bold text-white">{offer.providerName}</h3>
-                <p className="text-sm text-gray-400">{offer.address}</p>
-                <div className="flex items-center mt-2 justify-between">
-                  <span className="text-xs bg-teal-500 bg-opacity-20 text-teal-500 px-3 py-1 rounded-full flex items-center">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/>
-                    </svg>
-                    {offer.discount}
-                  </span>
-                  <button className="flex items-center justify-center w-8 h-8 rounded-full bg-white">
-                    <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
             ))}
           </div>
         </section>
@@ -237,36 +240,6 @@ const Home = () => {
           {/* Content for recommended section would go here */}
         </section>
       </main>
-
-      {/* Bottom Navigation */}
-      <nav className="bg-white p-4 fixed bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-800">
-        <ul className="flex justify-between items-center">
-          <li className="flex flex-col items-center">
-            <a href="#" className="flex flex-col items-center">
-              <Icons.home className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">My Booksy</span>
-            </a>
-          </li>
-          <li className="flex flex-col items-center">
-            <a href="/search" className="flex flex-col items-center">
-              <Icons.search className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Search</span>
-            </a>
-          </li>
-          <li className="flex flex-col items-center">
-            <a href="#" className="flex flex-col items-center">
-              <Icons.calendar className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Calendar</span>
-            </a>
-          </li>
-          <li className="flex flex-col items-center">
-            <a href="#" className="flex flex-col items-center">
-              <Icons.user className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Profile</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
     </div>
   );
 };
