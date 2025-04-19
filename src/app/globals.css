@@ -36,6 +36,7 @@ body {
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
+    --header-background: #152226;
     --sidebar-primary: 240 5.9% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
@@ -52,7 +53,7 @@ body {
     --nav-background: 240 10% 10%; /* Darker Gray */
     --nav-foreground: 0 0% 60%; /* Light Gray */
     --nav-active: 0 0% 100%; /* White */
-  }
+}
   .dark {
     --background: var(--dark-background);
     --foreground: var(--dark-foreground);
@@ -85,7 +86,9 @@ body {
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
+    --header-background: #152226;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
   }
 }
 

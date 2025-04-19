@@ -26,6 +26,7 @@ import {
   X,
   Workflow,
   Calendar,
+  MapPin
 } from 'lucide-react';
 import React from 'react';
 
@@ -58,89 +59,7 @@ const Icons = {
   trash: Trash,
   user: User,
   calendar: Calendar,
-  haircut: () => (
-    React.createElement('svg', {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: '2',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      className: 'lucide lucide-scissors',
-    },
-    React.createElement('path', {d: 'M3 3v18h18'}),
-    React.createElement('path', {d: 'm7 7 1 1 2 2'}),
-    React.createElement('path', {d: 'm17 17-1-1-2-2'}),
-    React.createElement('path', {d: 'M7 17 17 7'}),
-    React.createElement('circle', {cx: '7', cy: '7', r: '1'}),
-    React.createElement('circle', {cx: '17', cy: '17', r: '1'})
-    )
-  ),
-  massage: () => (
-    React.createElement('svg', {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: '2',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      className: 'lucide lucide-hand-massage',
-    },
-    React.createElement('path', {d: 'M16 7a5 5 0 0 0-5-5H3v5'}),
-    React.createElement('path', {d: 'M3 12h9a5 5 0 0 1 5 5v2a3 3 0 0 1-3 3H3'}),
-    React.createElement('path', {d: 'M17 4a2 2 0 0 1 2 2'}),
-    React.createElement('path', {d: 'M21 11a2 2 0 0 1 2 2'}),
-    React.createElement('path', {d: 'M17 18a2 2 0 0 1 2 2'})
-    )
-  ),
-  nail: () => (
-    React.createElement('svg', {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: '2',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      className: 'lucide lucide-hand',
-    },
-    React.createElement('path', {d: 'M12 22a3 3 0 0 0 3-3v-3'}),
-    React.createElement('path', {d: 'M5 22a3 3 0 0 1-3-3v-3'}),
-    React.createElement('path', {d: 'M19 22a3 3 0 0 0 3-3v-3'}),
-    React.createElement('path', {d: 'M8 22a3 3 0 0 1-3-3v-3'}),
-    React.createElement('path', {d: 'M16 22a3 3 0 0 0 3-3v-3'}),
-    React.createElement('path', {d: 'M12 16a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z'})
-    )
-  ),
-  facial: () => (
-    React.createElement('svg', {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      strokeWidth: '2',
-      strokeLinecap: 'round',
-      strokeLinejoin: 'round',
-      className: 'lucide lucide-face-scanning',
-    },
-    React.createElement('path', {d: 'M3 4V3a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1'}),
-    React.createElement('path', {d: 'M21 8v8'}),
-    React.createElement('path', {d: 'M3 8v8'}),
-    React.createElement('path', {d: 'M21 20v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1'}),
-    React.createElement('path', {d: 'M8 12h.01'}),
-    React.createElement('path', {d: 'M16 12h.01'})
-    )
-  ),
+  mapPin: MapPin,
   star: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
