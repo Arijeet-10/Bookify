@@ -192,7 +192,7 @@ const SearchPage = () => {
                     <span className="text-xs text-teal-500 px-2 py-1 rounded-full flex items-center">
                       <div className="flex items-center gap-1">
                         {offer.discount}
-                        <Icons.thumbsup className="w-4 h-4 mr-1" />
+                        <Icons.star className="w-4 h-4 mr-1" />
                       </div>
                     </span>
                   </div>
