@@ -11,7 +11,7 @@ import {useRouter} from 'next/navigation';
 import {Icons} from '@/components/icons';
 import {suggestServiceProvider} from '@/ai/flows/suggest-service-provider';
 import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
-import { ScrollArea } from "@/components/ui/scroll-area"
+import {ScrollArea} from "@/components/ui/scroll-area"
 
 const serviceCategories = [
   {
@@ -112,7 +112,7 @@ const Home = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-700 dark:text-gray-300">
       {/* Header with Logo */}
-      <header className="p-4 flex flex-col" style={{ backgroundColor: '#152226' }}>
+      <header className="p-4 flex flex-col" style={{backgroundColor: '#152226'}}>
         <div className="max-w-md w-full flex flex-col">
           <div className="flex justify-center mb-6 text-white font-bold">
             Bookify
@@ -129,9 +129,11 @@ const Home = () => {
             />
           </div>
         </div>
+      </header>
 
+      <div className="flex flex-col" style={{backgroundColor: '#152226'}}>
         {/* Service Categories - circular images with text below */}
-        <section className="mb-8 p-4 pb-8 h-40 flex items-center" >
+        <section className="mb-8 p-4 pb-8 h-40 flex items-center">
           <h2 className="text-2xl font-semibold mb-4 text-white">
             Service Categories
           </h2>
@@ -153,7 +155,7 @@ const Home = () => {
             </div>
           </ScrollArea>
         </section>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="flex-grow p-4">
