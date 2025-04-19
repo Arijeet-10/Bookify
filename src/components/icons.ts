@@ -1,4 +1,32 @@
-import {ArrowRight, Check, ChevronsUpDown, Circle, Copy, Edit, ExternalLink, File, HelpCircle, Home, Loader2, Mail, MessageSquare, Moon, Plus, PlusCircle, Search, Server, Settings, Share2, Shield, Sun, Trash, User, X, Workflow} from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  ChevronsUpDown,
+  Circle,
+  Copy,
+  Edit,
+  ExternalLink,
+  File,
+  HelpCircle,
+  Home,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Moon,
+  Plus,
+  PlusCircle,
+  Search,
+  Server,
+  Settings,
+  Share2,
+  Shield,
+  Sun,
+  Trash,
+  User,
+  X,
+  Workflow,
+  Calendar,
+} from 'lucide-react';
 import React from 'react';
 
 const Icons = {
@@ -29,6 +57,7 @@ const Icons = {
   spinner: Loader2,
   trash: Trash,
   user: User,
+  calendar: Calendar,
   haircut: () =>
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
