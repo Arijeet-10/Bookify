@@ -58,7 +58,7 @@ const Icons = {
   trash: Trash,
   user: User,
   calendar: Calendar,
-  haircut: () =>
+  haircut: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '24',
@@ -77,8 +77,9 @@ const Icons = {
     React.createElement('path', {d: 'M7 17 17 7'}),
     React.createElement('circle', {cx: '7', cy: '7', r: '1'}),
     React.createElement('circle', {cx: '17', cy: '17', r: '1'})
-    ),
-  massage: () =>
+    )
+  ),
+  massage: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '24',
@@ -96,8 +97,9 @@ const Icons = {
     React.createElement('path', {d: 'M17 4a2 2 0 0 1 2 2'}),
     React.createElement('path', {d: 'M21 11a2 2 0 0 1 2 2'}),
     React.createElement('path', {d: 'M17 18a2 2 0 0 1 2 2'})
-    ),
-  nail: () =>
+    )
+  ),
+  nail: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '24',
@@ -116,8 +118,9 @@ const Icons = {
     React.createElement('path', {d: 'M8 22a3 3 0 0 1-3-3v-3'}),
     React.createElement('path', {d: 'M16 22a3 3 0 0 0 3-3v-3'}),
     React.createElement('path', {d: 'M12 16a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z'})
-    ),
-  facial: () =>
+    )
+  ),
+  facial: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '24',
@@ -136,8 +139,9 @@ const Icons = {
     React.createElement('path', {d: 'M21 20v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1'}),
     React.createElement('path', {d: 'M8 12h.01'}),
     React.createElement('path', {d: 'M16 12h.01'})
-    ),
-  star: () =>
+    )
+  ),
+  star: () => (
     React.createElement('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
       width: '24',
@@ -148,7 +152,8 @@ const Icons = {
       className: 'lucide lucide-star',
     },
     React.createElement('path', {d: 'm12 2 3.09 6.26 6.91.5-5 5.05 1.18 6.88L12 16.47l-6.18 3.25 1.18-6.88-5-5.05 6.91-.5L12 2z'})
-    ),
+    )
+  ),
 };
 
 export {Icons};

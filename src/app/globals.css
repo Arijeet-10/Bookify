@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,7 +45,7 @@ body {
     --light-gray: 0 0% 94%; /* Light Gray #F0F0F0 */
 
      /* Dark mode color scheme */
-     --dark-background: 240 12% 12%; /* Dark Gray */
+     --dark-background: 0 0% 13%; /* Dark Gray */
      --dark-foreground: 0 0% 100%; /* White */
 
     /* Bottom navigation bar colors */
@@ -96,5 +97,4 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
 
