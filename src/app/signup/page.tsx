@@ -2,11 +2,13 @@
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {createUserWithEmailAndPassword} from 'firebase/auth';
-import {auth} from '@/lib/firebase';
+import {auth, db} from '@/lib/firebase';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {setDoc, doc} from 'firebase/firestore';
 
 const SignUpPage = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +17,7 @@ const SignUpPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [role, setRole] = useState('user');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +31,8 @@ const SignUpPage = () => {
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      //  await setDoc(doc(db, "users", userCredential.user.uid), { role: "user" }); // Store role in Firestore
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", userCredential.user.uid), { role: role }); // Store role in Firestore
       router.push('/');
     } catch (err: any) {
       setError(err.message);
@@ -76,6 +79,19 @@ const SignUpPage = () => {
                 onChange={e => setConfirmPassword(e.target.value)}
               />
             </div>
+              <div className="grid gap-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select onValueChange={setRole} defaultValue={role}>
+                      <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="serviceProvider">Service Provider</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
             {error && <p className="text-red-500">{error}</p>}
             <Button disabled={loading} type="submit" className="w-full">
               {loading ? 'Creating account...' : 'Sign Up'}

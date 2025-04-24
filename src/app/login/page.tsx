@@ -3,12 +3,12 @@
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {signInWithEmailAndPassword} from 'firebase/auth';
-import {auth} from '@/lib/firebase';
+import {auth, db} from '@/lib/firebase';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
-import {cn} from '@/lib/utils';
+import {getDoc, doc} from 'firebase/firestore';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -27,15 +27,15 @@ const LoginPage = () => {
       // Successful login, redirect based on user role (add role info to the user object on signup)
       const user = auth.currentUser;
       if (user) {
-        //  const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming you store user role in Firestore
-        //  const userData = userDoc.data();
-        //  if (userData?.role === "serviceProvider") {
-        //   router.push('/service-provider-dashboard');
-        // } else if (userData?.role === "admin") {
-        //   router.push('/admin-dashboard');
-        // } else {
-        router.push('/'); // Default redirect
-        // }
+        const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming you store user role in Firestore
+        const userData = userDoc.data();
+        if (userData?.role === "serviceProvider") {
+          router.push('/service-provider-dashboard');
+        } else if (userData?.role === "admin") {
+          router.push('/admin-dashboard');
+        } else {
+          router.push('/'); // Default redirect
+        }
       }
     } catch (err: any) {
       setError(err.message);
