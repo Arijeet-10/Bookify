@@ -134,9 +134,7 @@ const Home = () => {
       <div className="flex flex-col" style={{backgroundColor: '#152226'}}>
         {/* Service Categories - circular images with text below */}
         <section className="mb-8 p-4 pb-8 h-40 flex items-center">
-          <h2 className="text-2xl font-semibold mb-4 text-white">
-            Service Categories
-          </h2>
+  
           <ScrollArea className="w-full">
             <div className="flex space-x-4 p-2">
               {serviceCategories.map(category => (
