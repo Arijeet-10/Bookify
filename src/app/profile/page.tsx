@@ -1,0 +1,134 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import type { User } from 'firebase/auth';
+
+interface UserData {
+  fullName?: string;
+  email?: string | null;
+  role?: string;
+  photoURL?: string | null;
+}
+
+const ProfilePage = () => {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user) {
+        try {
+          // Fetch additional user data from Firestore
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (userDocSnap.exists()) {
+            const firestoreData = userDocSnap.data();
+            setUserData({
+              fullName: firestoreData.fullName || user.displayName, // Prioritize Firestore name
+              email: user.email,
+              role: firestoreData.role || 'user', // Default role if not found
+              photoURL: user.photoURL, // Get photo from auth provider if available
+            });
+          } else {
+            // User exists in Auth but not Firestore (might happen with direct Google sign-in before Firestore doc creation)
+             setUserData({
+              fullName: user.displayName || 'N/A',
+              email: user.email,
+              role: 'user', // Default role
+              photoURL: user.photoURL,
+            });
+            console.warn("User document not found in Firestore.");
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
+          setError("Failed to load profile information.");
+          // Still set basic info from auth
+           setUserData({
+            fullName: user.displayName || 'N/A',
+            email: user.email,
+            role: 'N/A',
+            photoURL: user.photoURL,
+          });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        // No user logged in, redirect to login
+        router.push('/login');
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login'); // Redirect to login page after logout
+    } catch (err) {
+      console.error("Logout Error:", err);
+      setError("Failed to logout. Please try again.");
+    }
+  };
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4">
+      <Card className="w-full max-w-md dark:bg-card">
+        <CardHeader className="items-center text-center">
+          <Avatar className="w-24 h-24 mb-4">
+            {loading ? (
+              <Skeleton className="w-24 h-24 rounded-full" />
+            ) : (
+              <>
+                <AvatarImage src={userData?.photoURL ?? undefined} alt={userData?.fullName ?? 'User'} />
+                <AvatarFallback className="text-3xl">{getInitials(userData?.fullName)}</AvatarFallback>
+              </>
+            )}
+          </Avatar>
+          <CardTitle className="text-2xl">
+             {loading ? <Skeleton className="h-8 w-3/4 mx-auto" /> : userData?.fullName || 'User Profile'}
+          </CardTitle>
+           <CardDescription>
+             {loading ? <Skeleton className="h-4 w-1/2 mx-auto mt-1" /> : `Role: ${userData?.role || 'N/A'}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {error && <p className="text-red-500 text-center">{error}</p>}
+          <div className="space-y-2">
+            <h4 className="font-medium">Email</h4>
+            <p className="text-sm text-muted-foreground">
+               {loading ? <Skeleton className="h-5 w-full" /> : userData?.email || 'No email provided'}
+            </p>
+          </div>
+           {/* Add more profile details here as needed */}
+
+          <Button onClick={handleLogout} variant="destructive" className="w-full mt-4">
+            Logout
+          </Button>
+           <Button onClick={() => router.push('/')} variant="outline" className="w-full mt-2">
+            Back to Home
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ProfilePage;

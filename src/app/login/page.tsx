@@ -3,7 +3,7 @@
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {signInWithEmailAndPassword} from 'firebase/auth';
-import {auth, db} from '@/lib/firebase';
+import {auth, db, googleProvider} from '@/lib/firebase';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
@@ -16,6 +16,18 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+    const handleGoogleSignIn = async () => {
+        try {
+            // TODO: Implement Google Sign-In
+            console.log("Google sign-in triggered");
+            // navigate to the home page
+            router.push('/');
+        } catch (error) {
+            console.error("Google sign-in error:", error);
+        }
+    };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +88,9 @@ const LoginPage = () => {
             <Button disabled={loading} type="submit" className="w-full">
               {loading ? 'Logging in...' : 'Login'}
             </Button>
+              <Button onClick={handleGoogleSignIn} className="w-full">
+                  Login with Google
+              </Button>
           </form>
           <p className="text-sm text-center text-gray-500">
             Don&apos;t have an account?{' '}

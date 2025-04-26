@@ -2,21 +2,43 @@
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {createUserWithEmailAndPassword} from 'firebase/auth';
-import {auth, db} from '@/lib/firebase';
-import {Button} from '@/components/ui/button';
+import {auth, db, provider} from '@/lib/firebase';
+import {Button} from "@/components/ui/button";
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {setDoc, doc} from 'firebase/firestore';
 
+import { signInWithPopup } from "firebase/auth";
+
+import {googleProvider} from "@/lib/firebase";
 const SignUpPage = () => {
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+    const handleGoogleSignIn = async () => {
+        try {
+            setLoading(true);
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            await setDoc(doc(db, "users", user.uid), {
+                role: 'user',
+                email: user.email,
+                fullName: user.displayName
+            }); // Store role, email and full name in Firestore
+            router.push('/');
+        } catch (error:any) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
   const [role, setRole] = useState('user');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +54,12 @@ const SignUpPage = () => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, "users", userCredential.user.uid), { role: role }); // Store role in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), { 
+          role: role,
+          email: email,
+          fullName:fullName
+      }); // Store role, email and full name in Firestore
+
       router.push('/');
     } catch (err: any) {
       setError(err.message);
@@ -50,6 +77,16 @@ const SignUpPage = () => {
         <CardContent className="grid gap-4">
           <form onSubmit={handleSubmit}>
             <div className="grid gap-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -58,6 +95,7 @@ const SignUpPage = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
+
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
@@ -96,6 +134,9 @@ const SignUpPage = () => {
             <Button disabled={loading} type="submit" className="w-full">
               {loading ? 'Creating account...' : 'Sign Up'}
             </Button>
+              <Button disabled={loading}  onClick={handleGoogleSignIn} className="w-full mt-2" >
+                  Sign up with google
+              </Button>
           </form>
           <p className="text-sm text-center text-gray-500">
             Already have an account?{' '}
