@@ -1,52 +1,87 @@
-
 'use client';
 
 import React from 'react';
-import { Icons } from '@/components/icons'; // Keep existing import path
-import Link from 'next/link'; // Import Link
-import { usePathname } from 'next/navigation'; // Import usePathname
-import { cn } from '@/lib/utils'; // Import cn for conditional classes
+import { Icons } from '@/components/icons';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Footer = () => {
-  const pathname = usePathname(); // Get the current path
+  const pathname = usePathname();
 
   const navItems = [
     { href: '/', label: 'My Booksy', icon: Icons.home },
     { href: '/search', label: 'Search', icon: Icons.search },
-    { href: '/calendar', label: 'Bookings', icon: Icons.calendar }, // Updated label to Bookings
+    { href: '/calendar', label: 'Bookings', icon: Icons.calendar },
     { href: '/profile', label: 'Profile', icon: Icons.user },
   ];
 
   return (
-    <nav className="bg-[#152226] p-4 fixed bottom-0 left-0 w-full border-t border-gray-700 dark:border-gray-800 mt-[50px]">
-      <ul className="flex justify-around items-center"> {/* Changed to justify-around for better spacing */}
+    <motion.nav
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="bg-[#152226] p-4 fixed bottom-0 left-0 w-full border-t border-gray-700 dark:border-gray-800"
+    >
+      <ul className="flex justify-around items-center">
         {navItems.map((item) => {
-          const isActive = pathname === item.href; // Check if the current path matches the item's href
+          const isActive = pathname === item.href;
           return (
             <li key={item.href} className="flex flex-col items-center">
-              <Link href={item.href} className="flex flex-col items-center text-center">
-                {/* Apply conditional styling based on isActive */}
-                <item.icon
-                  className={cn(
-                    'w-6 h-6 mb-1',
-                    isActive ? 'text-white dark:text-accent' : 'text-gray-400 dark:text-gray-500' // Active: white/accent, Inactive: gray
+              <Link
+                href={item.href}
+                className="relative flex flex-col items-center group"
+              >
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.span
+                      layoutId="footer-active"
+                      className="absolute -top-3 w-8 h-1 bg-white dark:bg-accent rounded-full"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    />
                   )}
-                />
-                <span
+                </AnimatePresence>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className={cn(
-                    'text-xs',
-                     isActive ? 'text-white dark:text-accent' : 'text-gray-400 dark:text-gray-500'
+                    'p-2 rounded-full transition-colors',
+                    isActive 
+                      ? 'bg-gray-700/30' 
+                      : 'hover:bg-gray-700/20'
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      'w-6 h-6 transition-colors',
+                      isActive 
+                        ? 'text-white dark:text-accent' 
+                        : 'text-gray-400 dark:text-gray-500'
+                    )}
+                  />
+                </motion.div>
+
+                <motion.span
+                  className={cn(
+                    'text-xs transition-colors',
+                    isActive 
+                      ? 'text-white dark:text-accent' 
+                      : 'text-gray-400 dark:text-gray-500'
                   )}
                 >
                   {item.label}
-                </span>
+                </motion.span>
               </Link>
             </li>
           );
         })}
       </ul>
-    </nav>
+    </motion.nav>
   );
 };
-export default Footer;
 
+export default Footer;

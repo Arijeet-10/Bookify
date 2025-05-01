@@ -119,7 +119,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[120px]">
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="items-center text-center">
           <Avatar className="w-24 h-24 mb-4">

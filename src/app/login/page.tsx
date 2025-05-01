@@ -103,7 +103,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-background px-4 py-10">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-background px-4 py-10 pb-[120px]">
       <Card className="w-full max-w-md shadow-lg border dark:bg-card">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-semibold">Login to Bookify</CardTitle>

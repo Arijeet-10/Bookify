@@ -50,7 +50,7 @@ body {
      --dark-foreground: 0 0% 100%; /* White */
 
     /* Bottom navigation bar colors */
-    --nav-background: 240 10% 10%; /* Darker Gray */
+    --nav-background: 0 100% 50%; /* red */
     --nav-foreground: 0 0% 60%; /* Light Gray */
     --nav-active: 0 0% 100%; /* White */
 }
