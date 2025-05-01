@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,6 +14,8 @@ import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore
 import { db } from '@/lib/firebase';
 import { serviceCategories } from '@/lib/constants'; // Keep service categories import
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import Link from 'next/link'; // Import Link
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 // Define the structure of a Service Provider from Firestore
 interface ServiceProvider {
@@ -40,6 +43,7 @@ const SearchPage = () => {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter(); // Initialize router
 
   // Fetch all service providers from Firestore on component mount
   useEffect(() => {
@@ -151,7 +155,7 @@ const SearchPage = () => {
                 value={whereQuery}
                 onChange={e => setWhereQuery(e.target.value)}
               />
-              <Icons.mapPin // Changed from Icons.map
+              <Icons.mapPin
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 size={20}
               />
@@ -218,46 +222,6 @@ const SearchPage = () => {
           </div>
         </section>
 
-        {/* Special Offers Section Removed */}
-        {/*
-        <section className="mb-8">
-           <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
-             Special Offers
-           </h2>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {specialOffers.map(offer => (
-              <Card key={offer.id} className="p-4 dark:bg-card" data-ai-hint={offer['data-ai-hint']}>
-                 <div className="flex items-center gap-4">
-                   <img
-                     src={offer.imageUrl}
-                     alt={offer.providerName}
-                     className="w-20 h-20 rounded-lg object-cover"
-                     width={80}
-                     height={80}
-                   />
-                   <div>
-                     <CardTitle className="text-lg font-semibold">{offer.providerName}</CardTitle>
-                     <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding * / }
-                       <p className="text-sm text-gray-500 dark:text-gray-400">{offer.address}</p>
-                       <div className="flex items-center mt-1">
-                         <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
-                         <span className="text-sm ml-1">{offer.rating} ({offer.reviews})</span>
-                       </div>
-                       <div className="flex items-center mt-2">
-                         <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
-                            <Icons.thumbsup className="w-4 h-4 mr-1" />
-                            {offer.discount}
-                         </span>
-                       </div>
-                     </CardContent>
-                   </div>
-                 </div>
-               </Card>
-            ))}
-          </div>
-         </section>
-        */}
-
         {/* Results - Fetched and Filtered Providers */}
         <section className="mb-8">
            <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
@@ -294,35 +258,34 @@ const SearchPage = () => {
                  const imageSrc = provider.imageURL || getPlaceholderImage(aiHint); // Use provider image or generate placeholder
 
                  return (
-                   <Card key={provider.id} className="p-4 dark:bg-card" data-ai-hint={aiHint}>
-                     <div className="flex items-center gap-4">
-                       <img
-                         src={imageSrc}
-                         alt={provider.businessName}
-                         className="w-20 h-20 rounded-lg object-cover"
-                         width={80}
-                         height={80}
-                         // Add error handling for images if needed: onError={(e) => e.currentTarget.src = '/placeholder.png'}
-                       />
-                       <div>
-                         <CardTitle className="text-lg font-semibold">{provider.businessName}</CardTitle>
-                         <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding */}
-                           <p className="text-sm text-muted-foreground">{provider.fullName}</p>
-                           <p className="text-sm text-gray-500 dark:text-gray-400">{provider.address || 'Address not available'}</p>
-                           {/* Display category name */}
-                           <p className="text-sm text-gray-500 dark:text-gray-400">Category: {category?.name || provider.serviceCategory}</p>
-                           {/* Placeholder for rating */}
-                           {(provider.rating || provider.reviews) && (
-                            <div className="flex items-center mt-1">
-                                <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
-                                <span className="text-sm ml-1">{provider.rating || '?'} ({provider.reviews || 'No reviews'})</span>
-                             </div>
-                           )}
-                           {/* Add Book button or link here eventually */}
-                         </CardContent>
+                  // Wrap Card with Link
+                   <Link href={`/provider/${provider.id}`} key={provider.id} passHref>
+                     <Card className="p-4 dark:bg-card hover:shadow-lg transition-shadow duration-300 cursor-pointer" data-ai-hint={aiHint}>
+                       <div className="flex items-center gap-4">
+                         <img
+                           src={imageSrc}
+                           alt={provider.businessName}
+                           className="w-20 h-20 rounded-lg object-cover"
+                           width={80}
+                           height={80}
+                         />
+                         <div>
+                           <CardTitle className="text-lg font-semibold">{provider.businessName}</CardTitle>
+                           <CardContent className="pt-2 px-0 pb-0">
+                             <p className="text-sm text-muted-foreground">{provider.fullName}</p>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">{provider.address || 'Address not available'}</p>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">Category: {category?.name || provider.serviceCategory}</p>
+                             {(provider.rating || provider.reviews) && (
+                              <div className="flex items-center mt-1">
+                                  <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
+                                  <span className="text-sm ml-1">{provider.rating || '?'} ({provider.reviews || 'No reviews'})</span>
+                               </div>
+                             )}
+                           </CardContent>
+                         </div>
                        </div>
-                     </div>
-                   </Card>
+                     </Card>
+                   </Link>
                  );
                 })}
              </div>
@@ -340,3 +303,4 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
+
