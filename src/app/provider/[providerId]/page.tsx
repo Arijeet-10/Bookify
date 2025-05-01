@@ -188,7 +188,8 @@ const ProviderServicePage = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-background p-4 pb-[80px]"> {/* Increased pb */}
+    // Removed flex flex-col and min-h-screen here, added padding to accommodate summary card + footer
+    <div className="bg-gray-100 dark:bg-background p-4 pb-[150px] md:pb-[120px]"> {/* Adjusted padding bottom */}
       {loadingProvider ? (
         <Card className="w-full max-w-4xl mx-auto dark:bg-card p-6">
           {/* Provider Header Skeleton */}
@@ -226,9 +227,9 @@ const ProviderServicePage = () => {
            <Button onClick={() => router.back()} className="mt-4">Go Back</Button>
          </Card>
       ) : providerData ? (
-        <>
+        <div className="w-full max-w-4xl mx-auto space-y-6"> {/* Wrap content in a div */}
         {/* Provider Details Card */}
-         <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
+         <Card className="dark:bg-card">
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
                <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border flex-shrink-0">
                  <AvatarImage
@@ -258,7 +259,7 @@ const ProviderServicePage = () => {
         </Card>
 
         {/* Services List Section */}
-         <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
+         <Card className="dark:bg-card">
              <CardHeader>
                  <CardTitle className="text-2xl">Select Services</CardTitle>
                  {error && providerData && <CardDescription className="text-destructive pt-2">{error}</CardDescription>}
@@ -313,18 +314,19 @@ const ProviderServicePage = () => {
                  )}
              </CardContent>
          </Card>
-         </>
+        </div>
       ) : null}
 
 
-        {/* Booking Summary Card - Sticky */}
+        {/* Booking Summary Card - Non-Sticky */}
         {selectedServices.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 w-full p-4 bg-background/90 dark:bg-card/90 backdrop-blur-sm border-t dark:border-muted z-10 mt-auto">
-             <Card className="w-full max-w-4xl mx-auto dark:bg-transparent border-none shadow-none">
-                 <CardHeader className="p-0 mb-2">
+            // Removed sticky positioning classes, added margin-top for spacing
+            <div className="w-full max-w-4xl mx-auto mt-6">
+             <Card className="dark:bg-card border dark:border-muted shadow-md">
+                 <CardHeader className="p-4 border-b dark:border-muted">
                      <CardTitle className="text-lg">Booking Summary</CardTitle>
                  </CardHeader>
-                 <CardContent className="p-0 space-y-2 max-h-32 overflow-y-auto mb-3">
+                 <CardContent className="p-4 space-y-2 max-h-48 overflow-y-auto"> {/* Added max-height and scroll */}
                      {selectedServices.map((item, index) => (
                          <React.Fragment key={item.id}>
                              <div className="flex justify-between items-center text-sm">
@@ -346,7 +348,7 @@ const ProviderServicePage = () => {
                          </React.Fragment>
                      ))}
                  </CardContent>
-                 <CardFooter className="p-0 flex justify-between items-center">
+                 <CardFooter className="p-4 border-t dark:border-muted flex justify-between items-center">
                      <div className="font-bold text-lg">
                          <span>Total: </span>
                          <span>₹{totalPrice.toFixed(2)}</span>
@@ -367,5 +369,3 @@ const ProviderServicePage = () => {
 };
 
 export default ProviderServicePage;
-
-    
