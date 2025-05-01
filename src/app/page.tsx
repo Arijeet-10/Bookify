@@ -1,18 +1,18 @@
 
 'use client';
 
-import React, {useState, useRef, useEffect} from 'react';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Icons} from '@/components/icons.tsx'; // Updated import path
-import {suggestServiceProvider} from '@/ai/flows/suggest-service-provider';
-import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
-import {ScrollArea} from '@/components/ui/scroll-area';
-import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
-import {Button} from '@/components/ui/button';
-import {Label} from '@/components/ui/label';
-import {toast} from '@/hooks/use-toast';
-import {useRouter} from 'next/navigation';
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Icons } from '@/components/icons.tsx'; // Updated import path
+import { suggestServiceProvider } from '@/ai/flows/suggest-service-provider';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 import { serviceCategories, specialOffers } from '@/lib/constants'; // Import from constants
 import Footer from '@/components/Footer'; // Import Footer
 
@@ -49,7 +49,7 @@ const Home = () => {
     }
 
     try {
-      const suggestion = await suggestServiceProvider({preferences: providerPreferences});
+      const suggestion = await suggestServiceProvider({ preferences: providerPreferences });
       setAiSuggestion(
         `Based on your preferences, we suggest: ${suggestion?.providerName} - ${suggestion?.providerDescription}`
       );
@@ -78,37 +78,41 @@ const Home = () => {
               placeholder="Search services or businesses"
               className="rounded-full bg-white text-gray-700 pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-100"
             />
-             {/* Ensure Icons.search is rendered correctly */}
+            {/* Ensure Icons.search is rendered correctly */}
             <Icons.search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           </div>
         </div>
       </header>
 
-       {/* Service Categories Section */}
-        <div className="flex flex-col bg-[#152226]">
-         <section className="p-4 pb-8 flex items-center overflow-x-auto">
-           <ScrollArea className="w-full">
-             <div className="flex space-x-4 p-2">
-               {serviceCategories.map(category => (
-                 <div key={category.id} className="flex-shrink-0">
-                   <Card
-                      className="w-32 h-32 flex flex-col items-center justify-center p-2 hover:shadow-md transition-shadow duration-300 bg-transparent border-none"
-                      data-ai-hint={category['data-ai-hint']}
-                    >
-                     <Avatar className="mb-2 w-20 h-20">
-                       <AvatarImage src={category.image} alt={category.name} className="object-cover" />
-                       <AvatarFallback>{category.name.charAt(0)}</AvatarFallback>
-                     </Avatar>
-                     <CardTitle className="text-sm text-center text-white dark:text-primary">
-                       {category.name}
-                     </CardTitle>
-                   </Card>
-                 </div>
-               ))}
-             </div>
-           </ScrollArea>
-         </section>
-       </div>
+      {/* Service Categories Section */}
+      <div className="flex flex-col bg-[#152226]">
+        <section className="p-4 pb-8">
+          <div className="flex overflow-x-auto space-x-4 p-2 scrollbar-hide -mx-4 px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {serviceCategories.map(category => (
+              <div key={category.id} className="flex-shrink-0">
+                <Card
+                  className="w-32 h-32 flex flex-col items-center justify-center p-2 hover:shadow-md transition-shadow duration-300 bg-transparent border-none"
+                  data-ai-hint={category['data-ai-hint']}
+                >
+                  <Avatar className="mb-2 w-20 h-20">
+                    <AvatarImage
+                      src={category.image}
+                      alt={category.name}
+                      className="object-cover"
+                    />
+                    <AvatarFallback>{category.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <CardTitle className="text-sm text-center text-white dark:text-primary">
+                    {category.name}
+                  </CardTitle>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+
 
 
       {/* Main Content */}
@@ -122,45 +126,45 @@ const Home = () => {
             {specialOffers.map(offer => (
               <div key={offer.id} className="flex-shrink-0 w-64">
                 <Card className="overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800" data-ai-hint={offer['data-ai-hint']}>
-                    <div className="relative">
-                       <img
-                         src={offer.imageUrl}
-                         alt={offer.providerName}
-                         className="w-full h-48 object-cover"
-                         width={256} // Provide width hint
-                         height={192} // Provide height hint
-                       />
-                       <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1 flex flex-col items-end backdrop-blur-sm">
-                          <div className="flex items-center gap-1">
-                            {/* Ensure Icons.star is rendered correctly */}
-                            <Icons.star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
-                            <span className="text-sm font-bold text-white">{offer.rating}</span>
-                          </div>
-                          <span className="text-xs text-gray-200 mt-0.5">{offer.reviews}</span>
-                        </div>
-                     </div>
-                    <CardContent className="p-3">
-                       <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 truncate mb-1">
-                         {offer.providerName}
-                       </CardTitle>
-                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center">
-                         {/* Ensure Icons.mapPin is rendered correctly */}
-                         <Icons.mapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                         {offer.address}
-                       </p>
-                       <div className="flex items-center mt-3 justify-between">
-                         <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
-                           {/* Ensure Icons.thumbsup is rendered correctly */}
-                           <Icons.thumbsup className="w-4 h-4 mr-1" />
-                           {offer.discount}
-                         </span>
-                         <button className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
-                           {/* Ensure Icons.share is rendered correctly */}
-                           <Icons.share className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                         </button>
-                       </div>
-                     </CardContent>
-                  </Card>
+                  <div className="relative">
+                    <img
+                      src={offer.imageUrl}
+                      alt={offer.providerName}
+                      className="w-full h-48 object-cover"
+                      width={256} // Provide width hint
+                      height={192} // Provide height hint
+                    />
+                    <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1 flex flex-col items-end backdrop-blur-sm">
+                      <div className="flex items-center gap-1">
+                        {/* Ensure Icons.star is rendered correctly */}
+                        <Icons.star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+                        <span className="text-sm font-bold text-white">{offer.rating}</span>
+                      </div>
+                      <span className="text-xs text-gray-200 mt-0.5">{offer.reviews}</span>
+                    </div>
+                  </div>
+                  <CardContent className="p-3">
+                    <CardTitle className="text-lg font-bold text-gray-800 dark:text-gray-200 truncate mb-1">
+                      {offer.providerName}
+                    </CardTitle>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center">
+                      {/* Ensure Icons.mapPin is rendered correctly */}
+                      <Icons.mapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                      {offer.address}
+                    </p>
+                    <div className="flex items-center mt-3 justify-between">
+                      <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
+                        {/* Ensure Icons.thumbsup is rendered correctly */}
+                        <Icons.thumbsup className="w-4 h-4 mr-1" />
+                        {offer.discount}
+                      </span>
+                      <button className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+                        {/* Ensure Icons.share is rendered correctly */}
+                        <Icons.share className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
