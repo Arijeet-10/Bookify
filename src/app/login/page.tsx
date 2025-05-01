@@ -1,14 +1,16 @@
+
 'use client';
 
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {signInWithEmailAndPassword} from 'firebase/auth';
+import {signInWithEmailAndPassword, signInWithPopup} from 'firebase/auth'; // Added signInWithPopup
 import {auth, db, googleProvider} from '@/lib/firebase';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Card, CardContent, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
-import {getDoc, doc} from 'firebase/firestore';
+import {getDoc, doc, setDoc} from 'firebase/firestore'; // Added setDoc
+import Link from 'next/link'; // Import Link
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -17,53 +19,96 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-    const handleGoogleSignIn = async () => {
-        try {
-            // TODO: Implement Google Sign-In
-            console.log("Google sign-in triggered");
-            // navigate to the home page
-            router.push('/');
-        } catch (error) {
-            console.error("Google sign-in error:", error);
-        }
-    };
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Check if user exists in Firestore, if not, create a basic user document
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      let userRole = 'user'; // Default to 'user' if no doc or role found
+
+      if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          userRole = userData?.role || 'user'; // Get role from Firestore
+      } else {
+        // Create a basic user doc for Google sign-in users if they don't exist
+         await setDoc(userDocRef, {
+            role: 'user',
+            email: user.email,
+            fullName: user.displayName || 'User',
+         }, { merge: true }); // Use merge to be safe
+      }
+
+      // Redirect based on role
+       redirectBasedOnRole(userRole);
+
+    } catch (error: any) {
+      setError(error.message);
+      console.error("Google sign-in error:", error);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const redirectBasedOnRole = (role: string) => {
+      if (role === "serviceProvider") {
+        router.push('/service-provider-dashboard'); // Adjust as needed
+      } else if (role === "admin") {
+        router.push('/admin-dashboard'); // Adjust as needed
+      } else {
+        router.push('/'); // Default redirect for 'user' or unknown roles
+      }
+  }
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailPasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Successful login, redirect based on user role (add role info to the user object on signup)
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming you store user role in Firestore
-        const userData = userDoc.data();
-        if (userData?.role === "serviceProvider") {
-          router.push('/service-provider-dashboard');
-        } else if (userData?.role === "admin") {
-          router.push('/admin-dashboard');
-        } else {
-          router.push('/'); // Default redirect
-        }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Fetch user role from Firestore after successful login
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+         redirectBasedOnRole(userData?.role || 'user'); // Default to user if role is missing
+      } else {
+        // This case should ideally not happen if users are always created in Firestore on signup
+        console.warn("User document not found in Firestore for logged-in user.");
+        setError("Could not determine user role. Please contact support.");
+         router.push('/'); // Fallback redirect
       }
     } catch (err: any) {
-      setError(err.message);
+       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+           setError('Invalid email or password.');
+       } else {
+           setError('Failed to login. Please try again.');
+           console.error("Login error:", err);
+       }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Login</CardTitle>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
+      <Card className="w-full max-w-md dark:bg-card">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl">Login to Bookify</CardTitle>
+           <CardDescription>Enter your credentials below</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleEmailPasswordSignIn}>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -72,6 +117,8 @@ const LoginPage = () => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                required
+                disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -82,21 +129,33 @@ const LoginPage = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                required
+                disabled={loading}
               />
             </div>
-            {error && <p className="text-red-500">{error}</p>}
-            <Button disabled={loading} type="submit" className="w-full">
+            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
+            <Button disabled={loading} type="submit" className="w-full mt-4">
               {loading ? 'Logging in...' : 'Login'}
             </Button>
-              <Button onClick={handleGoogleSignIn} className="w-full">
-                  Login with Google
-              </Button>
           </form>
-          <p className="text-sm text-center text-gray-500">
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+          <Button disabled={loading} variant="outline" onClick={handleGoogleSignIn} className="w-full">
+            Login with Google
+          </Button>
+          <p className="text-sm text-center text-muted-foreground mt-4">
             Don&apos;t have an account?{' '}
-            <a href="/signup" className="text-primary">
+            <Link href="/signup/select-role" className="text-primary hover:underline">
               Sign up
-            </a>
+            </Link>
           </p>
         </CardContent>
       </Card>
