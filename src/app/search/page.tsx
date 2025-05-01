@@ -1,16 +1,32 @@
-
 'use client';
 
-import React, {useState} from 'react';
-import {Input} from '@/components/ui/input';
-import {Icons} from '@/components/icons.tsx'; // Updated import path
-import {Card, CardTitle, CardContent} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Label} from '@/components/ui/label';
-import {Calendar} from '@/components/ui/calendar'
-import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
-import {cn} from '@/lib/utils';
-import {format} from 'date-fns';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
+import { Icons } from '@/components/icons'; // Corrected import path
+import { Card, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { serviceCategories, specialOffers } from '@/lib/constants'; // Import service categories and offers
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+
+// Define the structure of a Service Provider from Firestore
+interface ServiceProvider {
+  id: string;
+  businessName: string;
+  serviceCategory: string; // Matches the ID in serviceCategories
+  email: string;
+  fullName: string;
+  // Add other fields like address, rating, imageURL etc. as they are added to Firestore
+  address?: string; // Make optional for now
+  rating?: string; // Make optional
+  imageURL?: string; // Use a consistent field name (e.g., imageURL or profileImageURL)
+  reviews?: string; // Make optional
+}
 
 const SearchPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,74 +34,85 @@ const SearchPage = () => {
   const [whenDate, setWhenDate] = useState<Date | undefined>(new Date());
   const [isDateOpen, setIsDateOpen] = useState(false);
 
-  const [sortBy, setSortBy] = useState('');
-  const [filters, setFilters] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('Relevance'); // Default sort
+  const [filters, setFilters] = useState<string[]>([]); // Store selected category IDs
 
-  const handleFilterChange = (filter: string) => {
+  const [providers, setProviders] = useState<ServiceProvider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch all service providers from Firestore on component mount
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const providersCollectionRef = collection(db, 'serviceProviders');
+        const q = query(providersCollectionRef); // Basic query, can be extended later
+        const querySnapshot = await getDocs(q);
+        const fetchedProviders: ServiceProvider[] = [];
+        querySnapshot.forEach((doc) => {
+          fetchedProviders.push({ id: doc.id, ...doc.data() } as ServiceProvider);
+        });
+        setProviders(fetchedProviders);
+      } catch (err) {
+        console.error('Error fetching service providers:', err);
+        setError('Failed to load service providers. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProviders();
+  }, []);
+
+  // Filter providers based on selected categories
+  const filteredProviders = useMemo(() => {
+    if (filters.length === 0) {
+      return providers; // No filters applied, show all
+    }
+    return providers.filter(provider => filters.includes(provider.serviceCategory));
+  }, [providers, filters]);
+
+  // Handle filter button clicks
+  const handleFilterChange = (filterId: string) => {
     setFilters(prevFilters =>
-      prevFilters.includes(filter) ? prevFilters.filter(f => f !== filter) : [...prevFilters, filter]
+      prevFilters.includes(filterId) ? prevFilters.filter(f => f !== filterId) : [...prevFilters, filterId]
     );
   };
 
+  // Handle sort button clicks
   const handleSortByChange = (sortOption: string) => {
     setSortBy(sortOption);
+    // Add sorting logic here if needed based on the selected option
+    // e.g., sort filteredProviders array
   };
 
-  const specialOffers = [
-    {
-      id: '201',
-      providerName: 'LA Barber Downey',
-      imageUrl: 'https://media.istockphoto.com/id/639607852/photo/hairstylist-serving-client-at-barber-shop.jpg?s=612x612&w=0&k=20&c=-kBoMs26KIX1Hl6uh_VLRHCtLxnLYyq9a0n7X8iu5MQ=',
-      rating: '5.0',
-      reviews: '245 reviews',
-      address: '8317 Firestone Blvd, Downey, CA 90241, 5622506313, Downey, 90241',
-      discount: 'SAVE UP TO 10%',
-      "data-ai-hint": "barber shop men haircut"
-    },
-    {
-      id: '202',
-      providerName: 'BarberEze',
-      imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStor9vEAXB_4QZjTmJnggJ1H85KlvuX2ZsQw&s',
-      rating: '4.8',
-      reviews: '120 reviews',
-      address: '1140 W State Rd',
-      discount: 'SAVE UP TO 15%',
-      "data-ai-hint": "barber shop modern haircut"
-    },
-  ];
+  // Placeholder image function
+  const getPlaceholderImage = (categoryHint: string = 'business service') => {
+    // Simple hash function to get somewhat consistent image based on hint
+    let hash = 0;
+    for (let i = 0; i < categoryHint.length; i++) {
+      hash = categoryHint.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const width = 200 + (hash % 50); // Vary width slightly
+    const height = 200 + (hash % 50); // Vary height slightly
+    return `https://picsum.photos/${width}/${height}?random=${hash}`; // Add hash for variability
+  }
 
-  const searchResults = [
-    {
-      id: '1',
-      name: 'Dental Care Clinic',
-      type: 'Dental',
-      address: '123 Main St',
-      rating: '4.5',
-      image: 'https://picsum.photos/200/300',
-      "data-ai-hint": "dental clinic orthodontics"
-    },
-    {
-      id: '2',
-      name: 'Fitness Gym Pro',
-      type: 'Fitness',
-      address: '456 Oak Ave',
-      rating: '4.8',
-      image: 'https://picsum.photos/200/301',
-      "data-ai-hint": "fitness gym workout"
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-700 dark:bg-background dark:text-gray-300 pb-[60px]"> {/* Added padding-bottom */}
+      {/* Header */}
       <header className="p-4 flex justify-center bg-[#152226]">
         <div className="max-w-4xl w-full flex flex-col gap-4">
           <div className="flex justify-center mb-6 text-white font-bold text-xl">Bookify</div>
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative w-full">
               <Input
                 type="text"
                 placeholder="Search services or businesses"
-                className="rounded-full bg-white text-gray-700 pl-10"
+                className="rounded-full bg-white text-gray-700 pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-100"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -99,11 +126,11 @@ const SearchPage = () => {
               <Input
                 type="text"
                 placeholder="Where?"
-                className="rounded-full bg-white text-gray-700 pl-10"
+                className="rounded-full bg-white text-gray-700 pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-100"
                 value={whereQuery}
                 onChange={e => setWhereQuery(e.target.value)}
               />
-              <Icons.mapPin
+              <Icons.mapPin // Changed from Icons.map
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 size={20}
               />
@@ -112,22 +139,20 @@ const SearchPage = () => {
               <PopoverTrigger asChild>
                 <Button
                   variant={'outline'}
-                  className={cn(
-                    'w-[280px] justify-start text-left font-normal',
-                    !whenDate && 'text-muted-foreground'
-                  )}
+                   className={cn(
+                     'w-full md:w-[280px] justify-start text-left font-normal bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-100',
+                     !whenDate && 'text-muted-foreground'
+                   )}
                 >
+                  <Icons.calendar className="mr-2 h-4 w-4" />
                   {whenDate ? (
                     format(whenDate, 'LLL dd, y')
                   ) : (
-                    <span>
-                      <span className="text-gray-400">When?</span>
-                    </span>
+                    <span className="text-muted-foreground">When?</span>
                   )}
-                  <Icons.calendar className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={whenDate}
@@ -143,25 +168,28 @@ const SearchPage = () => {
       <main className="max-w-4xl mx-auto p-4">
         {/* Filters and Sort By */}
         <section className="mb-6">
-          <h3 className="text-lg font-semibold mb-2">Filters</h3>
+          <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">Filters by Category</h3>
           <div className="flex gap-2 flex-wrap">
-            {['Dental', 'Fitness', 'Professional', 'Other'].map(filter => (
+            {/* Use serviceCategories from constants */}
+            {serviceCategories.map(category => (
               <Button
-                key={filter}
-                variant={filters.includes(filter) ? 'default' : 'outline'}
-                onClick={() => handleFilterChange(filter)}
+                key={category.id}
+                variant={filters.includes(category.id) ? 'default' : 'outline'}
+                onClick={() => handleFilterChange(category.id)}
+                size="sm"
               >
-                {filter}
+                {category.name}
               </Button>
             ))}
           </div>
-          <h3 className="text-lg font-semibold mt-4 mb-2">Sort By</h3>
+          <h3 className="text-lg font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-200">Sort By</h3>
           <div className="flex gap-2 flex-wrap">
             {['Relevance', 'Rating', 'Distance'].map(sortOption => (
               <Button
                 key={sortOption}
                 variant={sortBy === sortOption ? 'default' : 'outline'}
                 onClick={() => handleSortByChange(sortOption)}
+                size="sm"
               >
                 {sortOption}
               </Button>
@@ -169,75 +197,119 @@ const SearchPage = () => {
           </div>
         </section>
 
-        {/* Special Offers */}
+        {/* Special Offers (using hardcoded data for now) */}
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Special Offers</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
+             Special Offers
+           </h2>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {specialOffers.map(offer => (
-              <Card key={offer.id} className="p-4" data-ai-hint={offer['data-ai-hint']}>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={offer.imageUrl}
-                    alt={offer.providerName}
-                    className="w-20 h-20 rounded-lg object-cover"
-                    width={80}
-                    height={80}
-                  />
-                  <div>
-                    <CardTitle className="text-lg font-semibold">{offer.providerName}</CardTitle>
-                    <CardContent className="pt-2">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{offer.address}</p>
-                      <div className="flex items-center mt-1">
-                        <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="text-sm ml-1">{offer.rating} ({offer.reviews})</span>
-                      </div>
+              <Card key={offer.id} className="p-4 dark:bg-card" data-ai-hint={offer['data-ai-hint']}>
+                 <div className="flex items-center gap-4">
+                   <img
+                     src={offer.imageUrl}
+                     alt={offer.providerName}
+                     className="w-20 h-20 rounded-lg object-cover"
+                     width={80}
+                     height={80}
+                   />
+                   <div>
+                     <CardTitle className="text-lg font-semibold">{offer.providerName}</CardTitle>
+                     <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding */}
+                       <p className="text-sm text-gray-500 dark:text-gray-400">{offer.address}</p>
+                       <div className="flex items-center mt-1">
+                         <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
+                         <span className="text-sm ml-1">{offer.rating} ({offer.reviews})</span>
+                       </div>
                        <div className="flex items-center mt-2">
-                        <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
+                         <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
                             <Icons.thumbsup className="w-4 h-4 mr-1" />
                             {offer.discount}
-                        </span>
+                         </span>
                        </div>
-                    </CardContent>
-                  </div>
-                </div>
-              </Card>
+                     </CardContent>
+                   </div>
+                 </div>
+               </Card>
             ))}
           </div>
-        </section>
+         </section>
 
-        {/* Results */}
+        {/* Results - Fetched and Filtered Providers */}
         <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Results</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {searchResults.map(result => (
-              <Card key={result.id} className="p-4" data-ai-hint={result['data-ai-hint']}>
-                <div className="flex items-center gap-4">
-                  <img
-                   src={result.image}
-                   alt={result.name}
-                   className="w-20 h-20 rounded-lg object-cover"
-                   width={80}
-                   height={80}
-                   />
-                  <div>
-                    <CardTitle className="text-lg font-semibold">{result.name}</CardTitle>
-                    <CardContent className="pt-2">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{result.address}</p>
-                      <div className="flex items-center mt-1">
-                        <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="text-sm ml-1">{result.rating}</span>
+           <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
+             Results
+           </h2>
+           {loading ? (
+            // Loading Skeletons
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, index) => (
+                  <Card key={index} className="p-4 dark:bg-card">
+                      <div className="flex items-center gap-4">
+                          <Skeleton className="w-20 h-20 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                              <Skeleton className="h-5 w-3/4" />
+                              <Skeleton className="h-4 w-full" />
+                              <Skeleton className="h-4 w-1/2" />
+                          </div>
                       </div>
-                    </CardContent>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
+                  </Card>
+              ))}
+            </div>
+           ) : error ? (
+            // Error Message
+             <p className="text-center text-destructive">{error}</p>
+           ) : filteredProviders.length === 0 ? (
+            // No Results Message
+            <p className="text-center text-muted-foreground py-8">No service providers found matching your criteria.</p>
+           ) : (
+            // Display Filtered Providers
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {filteredProviders.map(provider => {
+                 const category = serviceCategories.find(cat => cat.id === provider.serviceCategory);
+                 const aiHint = category ? `${category['data-ai-hint'] || category.name}` : 'business service';
+                 const imageSrc = provider.imageURL || getPlaceholderImage(aiHint); // Use provider image or generate placeholder
 
-        {/* Map */}
-        <section className="h-96 bg-gray-300 rounded-lg mb-10">
-          <div className="w-full h-full flex items-center justify-center">Map Placeholder</div>
+                 return (
+                   <Card key={provider.id} className="p-4 dark:bg-card" data-ai-hint={aiHint}>
+                     <div className="flex items-center gap-4">
+                       <img
+                         src={imageSrc}
+                         alt={provider.businessName}
+                         className="w-20 h-20 rounded-lg object-cover"
+                         width={80}
+                         height={80}
+                         // Add error handling for images if needed: onError={(e) => e.currentTarget.src = '/placeholder.png'}
+                       />
+                       <div>
+                         <CardTitle className="text-lg font-semibold">{provider.businessName}</CardTitle>
+                         <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding */}
+                           <p className="text-sm text-muted-foreground">{provider.fullName}</p>
+                           <p className="text-sm text-gray-500 dark:text-gray-400">{provider.address || 'Address not available'}</p>
+                           {/* Display category name */}
+                           <p className="text-sm text-gray-500 dark:text-gray-400">Category: {category?.name || provider.serviceCategory}</p>
+                           {/* Placeholder for rating */}
+                           {(provider.rating || provider.reviews) && (
+                            <div className="flex items-center mt-1">
+                                <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
+                                <span className="text-sm ml-1">{provider.rating || '?'} ({provider.reviews || 'No reviews'})</span>
+                             </div>
+                           )}
+                           {/* Add Book button or link here eventually */}
+                         </CardContent>
+                       </div>
+                     </div>
+                   </Card>
+                 );
+                })}
+             </div>
+           )}
+         </section>
+
+
+        {/* Map Placeholder */}
+        <section className="h-96 bg-gray-300 dark:bg-gray-700 rounded-lg mb-10">
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground">Map Placeholder</div>
         </section>
       </main>
     </div>
