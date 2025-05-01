@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, getDoc, Timestamp, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, addDoc, setDoc } from 'firebase/firestore'; // Added setDoc
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -162,9 +162,14 @@ const BookingConfirmationPageContent = () => {
         createdAt: Timestamp.now(),
       };
 
-      // Store the appointment in Firestore
+      // Store the appointment in Firestore (main 'appointments' collection)
       const appointmentsRef = collection(db, 'appointments');
-      await addDoc(appointmentsRef, appointmentData); // Pass the structured data
+      const mainDocRef = await addDoc(appointmentsRef, appointmentData); // Get the ref of the new doc
+
+      // Store the same appointment data in the user's subcollection ('users/{userId}/appointments')
+      const userAppointmentsRef = collection(db, 'users', user.uid, 'appointments');
+      // Use the same ID as the main appointment document for consistency
+      await setDoc(doc(userAppointmentsRef, mainDocRef.id), appointmentData);
 
       // Show success toast notification
       toast({
