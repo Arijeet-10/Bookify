@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -144,7 +143,7 @@ const ServiceProviderServicesPage = () => {
     toast({
         title: "Edit Functionality",
         description: "Editing services is not yet implemented.",
-        variant: "default",
+        variant: "default", // Use default variant for informational messages
     });
     // router.push(`/service-provider-services/edit/${serviceId}`); // Example route
   };
