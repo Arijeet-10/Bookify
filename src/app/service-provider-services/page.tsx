@@ -6,12 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const ServiceProviderServicesPage = () => {
-  // Placeholder data and functionality for services
-  const services = [
-    { id: '1', name: 'Men\'s Haircut', price: '$30', duration: '30 mins' },
-    { id: '2', name: 'Beard Trim', price: '$15', duration: '15 mins' },
-    { id: '3', name: 'Kids Haircut', price: '$25', duration: '30 mins' },
-  ];
+  // Placeholder data and functionality for services - Removed placeholder data
+  const services: { id: string, name: string, price: string, duration: string }[] = [];
 
   const handleAddService = () => {
     // Logic to add a new service (e.g., open a modal or navigate to a form)
