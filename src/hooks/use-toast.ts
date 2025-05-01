@@ -1,3 +1,4 @@
+
 "use client"
 
 // Inspired by react-hot-toast library
@@ -142,7 +143,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast({ ...props }: Toast) { // Export the toast function
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -191,4 +192,4 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+export { useToast, toast } // Ensure toast is exported
