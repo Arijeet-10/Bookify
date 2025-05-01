@@ -1,80 +1,50 @@
 import {
-  ArrowRight,
-  Check,
-  ChevronsUpDown,
-  Circle,
-  Copy,
-  Edit,
-  ExternalLink,
-  File,
-  HelpCircle,
-  Home,
-  Loader2,
-  Mail,
-  MessageSquare,
-  Moon,
-  Plus,
-  PlusCircle,
-  Search,
-  Server,
-  Settings,
-  Share2,
-  Shield,
-  Sun,
-  Trash,
-  User,
-  X,
-  Workflow,
-  Calendar,
+  LucideIcon,
   MapPin,
-  ThumbsUp
-} from 'lucide-react';
-import React from 'react';
+  Search,
+  Star,
+  Calendar,
+  MoreHorizontal,
+  Scissors,
+  Briefcase,
+  Dumbbell,
+  Smile, // Using Smile as a placeholder for Tooth and potentially Massage
+  Map,
+  Share2,
+  ThumbsUp,
+  Home,
+  User
+} from "lucide-react";
+import type { ComponentProps } from "react";
 
-const Icons = {
-  arrowRight: ArrowRight,
-  check: Check,
-  chevronDown: ChevronsUpDown,
-  circle: Circle,
-  workflow: Workflow,
-  close: X,
-  copy: Copy,
-  dark: Moon,
-  edit: Edit,
-  externalLink: ExternalLink,
-  file: File,
-  help: HelpCircle,
-  home: Home,
-  light: Sun,
-  loader: Loader2,
-  mail: Mail,
-  messageSquare: MessageSquare,
-  plus: Plus,
-  plusCircle: PlusCircle,
-  search: Search,
-  server: Server,
-  settings: Settings,
-  share: Share2,
-  shield: Shield,
-  spinner: Loader2,
-  trash: Trash,
-  user: User,
-  calendar: Calendar,
-  mapPin: MapPin,
-  star: () => (
-    React.createElement('svg', {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'currentColor', // Solid fill for the star
-      stroke: 'none', // No outline
-      className: 'lucide lucide-star',
-    },
-    React.createElement('path', {d: 'm12 2 3.09 6.26 6.91.5-5 5.05 1.18 6.88L12 16.47l-6.18 3.25 1.18-6.88-5-5.05 6.91-.5L12 2z'})
-    )
-  ),
-  thumbsup: ThumbsUp,
+// Define a type for the icon props to ensure consistency
+type IconComponent = (props: ComponentProps<LucideIcon>) => JSX.Element;
+
+// Define Icons object with explicit typing
+export const Icons: { [key: string]: IconComponent } = {
+  mapPin: (props) => <MapPin {...props} />,
+  search: (props) => <Search {...props} />,
+  star: (props) => <Star {...props} />,
+  calendar: (props) => <Calendar {...props} />,
+  more: (props) => <MoreHorizontal {...props} />,
+  scissors: (props) => <Scissors {...props} />,
+  briefcase: (props) => <Briefcase {...props} />,
+  dumbbell: (props) => <Dumbbell {...props} />,
+  smile: (props) => <Smile {...props} />, // Placeholder for general positive/happy icon
+  map: (props) => <Map {...props} />,
+  share: (props) => <Share2 {...props} />,
+  thumbsup: (props) => <ThumbsUp {...props} />,
+  home: (props) => <Home {...props} />,
+  user: (props) => <User {...props} />,
+  tooth: (props) => <Smile {...props} />, // Placeholder for Tooth, using Smile
+  // Add other custom icons or placeholders here if needed
+  // Example of inline SVG for a custom icon if needed:
+  // customIcon: (props) => (
+  //   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+  //     {/* SVG path data */}
+  //   </svg>
+  // ),
 };
 
-export {Icons};
+// Export the LucideIcon type if needed elsewhere
+export type { LucideIcon };
