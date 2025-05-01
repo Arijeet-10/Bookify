@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -10,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast'; // Ensure useToast hook is imported
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +45,7 @@ const BookingConfirmationPageContent = () => {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast(); // Get the toast function
 
   const providerId = params.providerId as string;
   const servicesParam = searchParams.get('services');
@@ -73,7 +75,7 @@ const BookingConfirmationPageContent = () => {
       }
     });
     return () => unsubscribe();
-  }, [router]);
+  }, [router, toast]); // Added toast dependency
 
   // Fetch provider details and parse query params
   useEffect(() => {
@@ -161,13 +163,14 @@ const BookingConfirmationPageContent = () => {
         createdAt: Timestamp.now(),
       });
 
+      // Show success toast notification
       toast({
         title: "Booking Confirmed!",
         description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed.`,
       });
 
-      // Redirect to a confirmation page or bookings page
-      router.push('/calendar'); // Redirect to the user's bookings page
+      // Redirect to the bookings (calendar) page
+      router.push('/calendar');
 
     } catch (err) {
       console.error('Error confirming booking:', err);
