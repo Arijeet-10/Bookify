@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -180,13 +179,11 @@ const ProviderServicePage = () => {
   }, [selectedServices]);
 
   const handleProceedToBook = () => {
-      // Placeholder for actual booking submission logic
-      toast({
-          title: "Proceeding to Book (Placeholder)",
-          description: `Total: ₹${totalPrice.toFixed(2)}. Ready to finalize?`,
-      });
-      // Example: Navigate to a checkout/confirmation page
-      // router.push(`/checkout?providerId=${providerId}&services=${JSON.stringify(selectedServices)}`);
+      // Encode selected services for the query parameter
+      const servicesQueryParam = encodeURIComponent(JSON.stringify(selectedServices.map(s => ({id: s.id, name: s.name, price: s.price, duration: s.duration}))));
+
+      // Navigate to the booking confirmation page
+      router.push(`/booking/${providerId}?services=${servicesQueryParam}&total=${totalPrice.toFixed(2)}`);
   }
 
   return (
@@ -335,7 +332,7 @@ const ProviderServicePage = () => {
                 <CardFooter className="flex justify-end">
                     <Button
                         onClick={handleProceedToBook}
-                        disabled={totalPrice === 0}
+                        disabled={totalPrice === 0 || loadingProvider || loadingServices} // Also disable if loading
                     >
                         Proceed to Book
                     </Button>
