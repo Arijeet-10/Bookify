@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Icons } from '@/components/icons'; // Corrected import path
+import { Icons } from '@/components/icons';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { serviceCategories, specialOffers } from '@/lib/constants'; // Import service categories and offers
+import { serviceCategories } from '@/lib/constants'; // Keep service categories import
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 // Define the structure of a Service Provider from Firestore
@@ -66,13 +66,34 @@ const SearchPage = () => {
     fetchProviders();
   }, []);
 
-  // Filter providers based on selected categories
+  // Filter providers based on search query and selected categories
   const filteredProviders = useMemo(() => {
-    if (filters.length === 0) {
-      return providers; // No filters applied, show all
+    let tempProviders = providers;
+
+    // Filter by search query (businessName, fullName, serviceCategory name)
+    if (searchQuery) {
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        tempProviders = tempProviders.filter(provider => {
+             const category = serviceCategories.find(cat => cat.id === provider.serviceCategory);
+             return (
+                provider.businessName.toLowerCase().includes(lowerCaseQuery) ||
+                provider.fullName.toLowerCase().includes(lowerCaseQuery) ||
+                (category && category.name.toLowerCase().includes(lowerCaseQuery))
+             );
+        });
     }
-    return providers.filter(provider => filters.includes(provider.serviceCategory));
-  }, [providers, filters]);
+
+    // Filter by selected categories
+    if (filters.length > 0) {
+      tempProviders = tempProviders.filter(provider => filters.includes(provider.serviceCategory));
+    }
+
+    // Add sorting logic if needed based on `sortBy` state
+    // For now, just return the filtered list
+
+    return tempProviders;
+  }, [providers, filters, searchQuery]); // Add searchQuery dependency
+
 
   // Handle filter button clicks
   const handleFilterChange = (filterId: string) => {
@@ -197,7 +218,8 @@ const SearchPage = () => {
           </div>
         </section>
 
-        {/* Special Offers (using hardcoded data for now) */}
+        {/* Special Offers Section Removed */}
+        {/*
         <section className="mb-8">
            <h2 className="text-2xl font-semibold mb-4 text-primary dark:text-primary">
              Special Offers
@@ -215,7 +237,7 @@ const SearchPage = () => {
                    />
                    <div>
                      <CardTitle className="text-lg font-semibold">{offer.providerName}</CardTitle>
-                     <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding */}
+                     <CardContent className="pt-2 px-0 pb-0"> {/* Remove default padding * / }
                        <p className="text-sm text-gray-500 dark:text-gray-400">{offer.address}</p>
                        <div className="flex items-center mt-1">
                          <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
@@ -234,6 +256,7 @@ const SearchPage = () => {
             ))}
           </div>
          </section>
+        */}
 
         {/* Results - Fetched and Filtered Providers */}
         <section className="mb-8">
