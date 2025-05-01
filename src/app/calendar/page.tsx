@@ -34,7 +34,7 @@ const CalendarPage = () => {
   const router = useRouter();
   const [showIndexAlert, setShowIndexAlert] = useState(false); // State to control index alert visibility
 
-  // Fetch all upcoming appointments for the user
+  // Fetch all upcoming appointments for the user from their subcollection
   const fetchAppointments = async (userId: string) => {
     setLoading(true);
     setError(null);
@@ -45,13 +45,13 @@ const CalendarPage = () => {
       // Get current time as Firestore Timestamp
       const nowTimestamp = Timestamp.now();
 
-      // Reference the 'appointments' collection
-      const appointmentsRef = collection(db, 'appointments');
+      // Reference the user's 'appointments' subcollection
+      const userAppointmentsRef = collection(db, 'users', userId, 'appointments');
 
-      // Query for appointments for the logged-in user with date >= now, ordered by date
+      // Query for appointments in the user's subcollection with date >= now, ordered by date
       const q = query(
-        appointmentsRef,
-        where('userId', '==', userId), // Filter by the logged-in user's ID
+        userAppointmentsRef,
+        // userId filter is no longer needed as we are querying the user's specific subcollection
         where('date', '>=', nowTimestamp), // Appointment date is in the future or now
         orderBy('date', 'asc') // Order upcoming appointments chronologically
       );
@@ -68,8 +68,9 @@ const CalendarPage = () => {
     } catch (err: any) {
       console.error('Error fetching appointments:', err);
       // Check if the error is the specific "index required" error
+      // Note: The required index might change when querying the subcollection
       if (err.code === 'failed-precondition' && err.message.includes('index')) {
-           setError('Firestore query requires a composite index. Please create it in the Firebase Console.');
+           setError('Firestore query requires an index. Please create it in the Firebase Console (check the console for the exact link).');
            setShowIndexAlert(true); // Show the specific alert
       } else {
            setError('Failed to load appointments. Please try again.');
@@ -122,7 +123,7 @@ const CalendarPage = () => {
                    <Terminal className="h-4 w-4" />
                    <AlertTitle>Heads up! Index Required</AlertTitle>
                    <AlertDescription>
-                     {error} You can create the required index by visiting the link provided in the developer console error message. Appointments will load correctly once the index is built (this may take a few minutes).
+                     {error} You can create the required index by visiting the link provided in the developer console error message (it might be different for the subcollection). Appointments will load correctly once the index is built (this may take a few minutes).
                    </AlertDescription>
                </Alert>
            )}
