@@ -27,7 +27,7 @@ import type { Service } from '../page'; // Import the Service interface
 // Define Zod schema for validation (same as AddServiceDialog)
 const serviceSchema = z.object({
   name: z.string().min(1, { message: 'Service name is required' }),
-  price: z.string().min(1, { message: 'Price is required' }).regex(/^\d+(\.\d{1,2})?$/, { message: 'Price must be a number (e.g., 25 or 25.50)' }),
+  price: z.string().min(1, { message: 'Price is required' }).regex(/^\d+(\.\d{1,2})?$/, { message: 'Price must be a number (e.g., 2500 or 2500.50)' }), // Updated example
   duration: z.string().min(1, { message: 'Duration is required (e.g., 30 mins)' }),
 });
 
@@ -139,9 +139,9 @@ const EditServiceDialog: React.FC<EditServiceDialogProps> = ({ children, userId,
                 name="price"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Price ($)</FormLabel>
+                    <FormLabel className="text-right">Price (₹)</FormLabel> {/* Changed $ to ₹ */}
                     <FormControl className="col-span-3">
-                       <Input type="text" placeholder="e.g., 50 or 49.99" {...field} disabled={loading} />
+                       <Input type="text" placeholder="e.g., 500 or 499.99" {...field} disabled={loading} /> {/* Updated example */}
                     </FormControl>
                      <FormMessage className="col-span-4 text-right" />
                   </FormItem>

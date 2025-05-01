@@ -209,7 +209,7 @@ const ServiceProviderServicesPage = () => {
                   <div className="mb-3 sm:mb-0">
                     <p className="font-semibold text-lg">{service.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      Price: {service.price ? (service.price.startsWith('$') ? service.price : `$${service.price}`) : 'N/A'} | Duration: {service.duration || 'N/A'}
+                      Price: {service.price ? (service.price.startsWith('₹') ? service.price : `₹${service.price}`) : 'N/A'} | Duration: {service.duration || 'N/A'} {/* Changed $ to ₹ */}
                     </p>
                   </div>
                   <div className="flex space-x-2 self-end sm:self-center">
