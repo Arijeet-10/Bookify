@@ -3,7 +3,7 @@
 
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {signInWithEmailAndPassword, signInWithPopup} from 'firebase/auth'; // Added signInWithPopup
+import {signInWithEmailAndPassword, signInWithPopup, updateProfile} from 'firebase/auth'; // Added signInWithPopup and updateProfile
 import {auth, db, googleProvider} from '@/lib/firebase';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -26,7 +26,7 @@ const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      // Check if user exists in Firestore, if not, create a basic user document
+      // Check if user exists in Firestore 'users' collection
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -36,32 +36,40 @@ const LoginPage = () => {
           const userData = userDocSnap.data();
           userRole = userData?.role || 'user'; // Get role from Firestore
       } else {
-        // Create a basic user doc for Google sign-in users if they don't exist
+        // Create a basic user doc in 'users' for Google sign-in users if they don't exist
          await setDoc(userDocRef, {
-            role: 'user',
+            role: 'user', // Default role for Google sign-in
             email: user.email,
-            fullName: user.displayName || 'User',
+            fullName: user.displayName || 'User', // Use Google display name
          }, { merge: true }); // Use merge to be safe
       }
 
-      // Redirect based on role
+      // Redirect based on role fetched or created
        redirectBasedOnRole(userRole);
 
     } catch (error: any) {
-      setError(error.message);
-      console.error("Google sign-in error:", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('Google Sign-in cancelled.');
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+         setError('An account already exists with this email address using a different sign-in method.');
+      }
+       else {
+        setError('Google sign-in failed. Please try again.');
+         console.error("Google sign-in error:", error);
+      }
     } finally {
         setLoading(false);
     }
   };
 
+  // Helper function to redirect based on role
   const redirectBasedOnRole = (role: string) => {
       if (role === "serviceProvider") {
-        router.push('/service-provider-dashboard'); // Adjust as needed
+        router.push('/service-provider-dashboard');
       } else if (role === "admin") {
-        router.push('/admin-dashboard'); // Adjust as needed
-      } else {
-        router.push('/'); // Default redirect for 'user' or unknown roles
+        router.push('/admin-dashboard');
+      } else { // Default for 'user' or unknown roles
+        router.push('/');
       }
   }
 
@@ -75,7 +83,7 @@ const LoginPage = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Fetch user role from Firestore after successful login
+      // Fetch user role from Firestore 'users' collection after successful login
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -83,10 +91,21 @@ const LoginPage = () => {
         const userData = userDocSnap.data();
          redirectBasedOnRole(userData?.role || 'user'); // Default to user if role is missing
       } else {
-        // This case should ideally not happen if users are always created in Firestore on signup
-        console.warn("User document not found in Firestore for logged-in user.");
-        setError("Could not determine user role. Please contact support.");
-         router.push('/'); // Fallback redirect
+        // This case might happen if a user authenticates but their Firestore doc failed to create during signup
+        console.warn("User document not found in Firestore for logged-in user:", user.uid);
+         // Attempt to create a basic user doc as a fallback, assuming they are a standard user
+          try {
+            await setDoc(userDocRef, {
+              role: 'user', // Assume 'user' role as a fallback
+              email: user.email,
+              fullName: user.displayName || 'User', // Use auth display name if available
+            }, { merge: true });
+             router.push('/'); // Redirect to home after creating fallback doc
+          } catch (docError) {
+             console.error("Failed to create fallback user document:", docError);
+             setError("Could not verify user details. Please contact support.");
+             await auth.signOut(); // Sign out the user as we can't determine their role
+          }
       }
     } catch (err: any) {
        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {

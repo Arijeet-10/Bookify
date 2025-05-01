@@ -2,7 +2,7 @@
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {createUserWithEmailAndPassword, signInWithPopup} from 'firebase/auth';
+import {createUserWithEmailAndPassword, signInWithPopup, updateProfile} from 'firebase/auth'; // Added updateProfile
 import {auth, db, googleProvider} from '@/lib/firebase';
 import {Button} from "@/components/ui/button";
 import {Input} from '@/components/ui/input';
@@ -26,7 +26,7 @@ const UserSignUpPage = () => {
       setError(null);
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      // Ensure Firestore document is created or updated for Google sign-in users
+      // Ensure Firestore document is created or updated for Google sign-in users in the 'users' collection
       await setDoc(doc(db, "users", user.uid), {
         role: 'user', // Always 'user' for this page
         email: user.email,
@@ -34,8 +34,14 @@ const UserSignUpPage = () => {
       }, { merge: true }); // Use merge to avoid overwriting existing data if they signed up manually first
       router.push('/'); // Redirect to home page after successful sign-in/up
     } catch (error: any) {
-      setError(error.message);
-      console.error("Google sign-in error:", error);
+       if (error.code === 'auth/popup-closed-by-user') {
+         setError('Google Sign-in cancelled.');
+       } else if (error.code === 'auth/account-exists-with-different-credential') {
+          setError('An account already exists with this email address using a different sign-in method.');
+       } else {
+         setError('Google sign-in failed. Please try again.');
+         console.error("Google sign-in error:", error);
+       }
     } finally {
       setLoading(false);
     }
@@ -60,9 +66,14 @@ const UserSignUpPage = () => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Store user details in Firestore with the 'user' role
+       // Update Firebase Auth profile display name
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: fullName });
+      }
+
+      // Store user details in Firestore 'users' collection with the 'user' role
       await setDoc(doc(db, "users", userCredential.user.uid), {
-        role: 'user', // Hardcode role to 'user'
+        role: 'user', // Explicitly set role to 'user'
         email: email,
         fullName: fullName,
       });
@@ -84,7 +95,7 @@ const UserSignUpPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Create User Account</CardTitle>
@@ -101,6 +112,7 @@ const UserSignUpPage = () => {
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -112,6 +124,7 @@ const UserSignUpPage = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -123,6 +136,7 @@ const UserSignUpPage = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -134,6 +148,7 @@ const UserSignUpPage = () => {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
 

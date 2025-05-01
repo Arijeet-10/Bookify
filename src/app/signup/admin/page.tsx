@@ -2,7 +2,7 @@
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {createUserWithEmailAndPassword} from 'firebase/auth';
+import {createUserWithEmailAndPassword, updateProfile} from 'firebase/auth'; // Added updateProfile
 import {auth, db} from '@/lib/firebase';
 import {Button} from "@/components/ui/button";
 import {Input} from '@/components/ui/input';
@@ -54,8 +54,15 @@ const AdminSignUpPage = () => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Store user details in Firestore with the 'admin' role
-      await setDoc(doc(db, "users", userCredential.user.uid), {
+      const user = userCredential.user;
+
+       // Update Firebase Auth profile display name
+       if (auth.currentUser) {
+         await updateProfile(auth.currentUser, { displayName: fullName });
+       }
+
+      // Store user details in Firestore 'users' collection with the 'admin' role
+      await setDoc(doc(db, "users", user.uid), {
         role: 'admin', // Hardcode role to 'admin'
         email: email,
         fullName: fullName,
@@ -79,7 +86,7 @@ const AdminSignUpPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Admin Registration</CardTitle>
@@ -96,6 +103,7 @@ const AdminSignUpPage = () => {
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -107,6 +115,7 @@ const AdminSignUpPage = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -118,6 +127,7 @@ const AdminSignUpPage = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
             <div className="grid gap-2">
@@ -129,6 +139,7 @@ const AdminSignUpPage = () => {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
+                 disabled={loading}
               />
             </div>
               <div className="grid gap-2">
@@ -140,6 +151,7 @@ const AdminSignUpPage = () => {
                   value={adminSecret}
                   onChange={e => setAdminSecret(e.target.value)}
                   required
+                  disabled={loading}
                 />
               </div>
 

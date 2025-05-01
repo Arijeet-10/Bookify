@@ -1,7 +1,8 @@
+
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {createUserWithEmailAndPassword} from 'firebase/auth';
+import {createUserWithEmailAndPassword, updateProfile} from 'firebase/auth'; // Added updateProfile
 import {auth, db} from '@/lib/firebase';
 import {Button} from "@/components/ui/button";
 import {Input} from '@/components/ui/input';
@@ -56,15 +57,30 @@ const ServiceProviderSignUpPage = () => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      // Store user details in Firestore with the 'serviceProvider' role
-      await setDoc(doc(db, "users", userCredential.user.uid), {
+      const user = userCredential.user;
+
+       // Update Firebase Auth profile display name
+        if (auth.currentUser) {
+          await updateProfile(auth.currentUser, { displayName: data.fullName });
+        }
+
+      // 1. Store basic user info with role in 'users' collection
+      await setDoc(doc(db, "users", user.uid), {
         role: 'serviceProvider',
+        email: data.email,
+        fullName: data.fullName,
+      });
+
+      // 2. Store detailed provider info in 'serviceProviders' collection
+      await setDoc(doc(db, "serviceProviders", user.uid), {
+        userId: user.uid, // Link back to the user ID in the 'users' collection
         email: data.email,
         fullName: data.fullName,
         businessName: data.businessName,
         serviceCategory: data.serviceCategory,
-        // Add other provider-specific fields here later (e.g., address)
+        // Add other provider-specific fields here later (e.g., address, phone)
       });
+
 
       // Redirect to a service provider dashboard or setup page after signup
       router.push('/service-provider-dashboard'); // Adjust this route as needed
@@ -99,7 +115,7 @@ const ServiceProviderSignUpPage = () => {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your full name" {...field} />
+                      <Input placeholder="Enter your full name" {...field} disabled={loading}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,7 +128,7 @@ const ServiceProviderSignUpPage = () => {
                   <FormItem>
                     <FormLabel>Shop Name / Business Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your business name" {...field} />
+                      <Input placeholder="Enter your business name" {...field} disabled={loading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -124,7 +140,7 @@ const ServiceProviderSignUpPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Service Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a service category" />
@@ -149,7 +165,7 @@ const ServiceProviderSignUpPage = () => {
                   <FormItem>
                     <FormLabel>Business Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter your business email" {...field} />
+                      <Input type="email" placeholder="Enter your business email" {...field} disabled={loading}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -162,7 +178,7 @@ const ServiceProviderSignUpPage = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter your password (min. 6 characters)" {...field} />
+                      <Input type="password" placeholder="Enter your password (min. 6 characters)" {...field} disabled={loading}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -175,7 +191,7 @@ const ServiceProviderSignUpPage = () => {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Confirm your password" {...field} />
+                      <Input type="password" placeholder="Confirm your password" {...field} disabled={loading}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

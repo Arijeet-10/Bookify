@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -16,6 +17,9 @@ interface UserData {
   email?: string | null;
   role?: string;
   photoURL?: string | null;
+  // Add fields specific to service providers if needed, fetched conditionally
+  businessName?: string;
+  serviceCategory?: string;
 }
 
 const ProfilePage = () => {
@@ -28,32 +32,54 @@ const ProfilePage = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         try {
-          // Fetch additional user data from Firestore
+          // Fetch basic user data (including role) from 'users' collection
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
 
           if (userDocSnap.exists()) {
-            const firestoreData = userDocSnap.data();
-            setUserData({
-              fullName: firestoreData.fullName || user.displayName, // Prioritize Firestore name
+            const baseUserData = userDocSnap.data();
+             let profileData: UserData = {
+              fullName: baseUserData.fullName || user.displayName, // Prioritize Firestore name
               email: user.email,
-              role: firestoreData.role || 'user', // Default role if not found
-              photoURL: user.photoURL, // Get photo from auth provider if available
-            });
+              role: baseUserData.role || 'user', // Default role if not found
+              photoURL: user.photoURL, // Get photo from auth provider
+            };
+
+            // If the role is serviceProvider, fetch additional data from 'serviceProviders' collection
+            if (profileData.role === 'serviceProvider') {
+                const providerDocRef = doc(db, 'serviceProviders', user.uid);
+                const providerDocSnap = await getDoc(providerDocRef);
+                if (providerDocSnap.exists()) {
+                    const providerData = providerDocSnap.data();
+                    profileData = {
+                        ...profileData,
+                        businessName: providerData.businessName,
+                        serviceCategory: providerData.serviceCategory,
+                         // Add other provider fields as needed
+                    };
+                } else {
+                     console.warn("Service provider document not found in Firestore for user:", user.uid);
+                     // Optionally handle this case, maybe show a message or default values
+                }
+            }
+             setUserData(profileData);
+
           } else {
-            // User exists in Auth but not Firestore (might happen with direct Google sign-in before Firestore doc creation)
+            // User exists in Auth but not 'users' Firestore (should ideally not happen after signup fixes)
+            // Provide defaults and log a warning
              setUserData({
               fullName: user.displayName || 'N/A',
               email: user.email,
               role: 'user', // Default role
               photoURL: user.photoURL,
             });
-            console.warn("User document not found in Firestore.");
+            console.warn("User document not found in 'users' collection for UID:", user.uid);
+             setError("Profile data incomplete. Please contact support.");
           }
         } catch (err) {
           console.error("Error fetching user data:", err);
           setError("Failed to load profile information.");
-          // Still set basic info from auth
+          // Still set basic info from auth as fallback
            setUserData({
             fullName: user.displayName || 'N/A',
             email: user.email,
@@ -85,7 +111,8 @@ const ProfilePage = () => {
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    // Ensure name is treated as a string before splitting
+    return String(name).split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
   return (
@@ -106,7 +133,7 @@ const ProfilePage = () => {
              {loading ? <Skeleton className="h-8 w-3/4 mx-auto" /> : userData?.fullName || 'User Profile'}
           </CardTitle>
            <CardDescription>
-             {loading ? <Skeleton className="h-4 w-1/2 mx-auto mt-1" /> : `Role: ${userData?.role || 'N/A'}`}
+             {loading ? <Skeleton className="h-4 w-1/2 mx-auto mt-1" /> : `Role: ${userData?.role ? userData.role.charAt(0).toUpperCase() + userData.role.slice(1) : 'N/A'}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -118,7 +145,28 @@ const ProfilePage = () => {
                {loading ? <Skeleton className="h-5 w-full" /> : userData?.email || 'No email provided'}
             </div>
           </div>
-           {/* Add more profile details here as needed */}
+
+           {/* Display Service Provider specific details if applicable */}
+           {userData?.role === 'serviceProvider' && (
+             <>
+              <div className="space-y-2">
+                 <h4 className="font-medium">Business Name</h4>
+                 <div className="text-sm text-muted-foreground">
+                    {loading ? <Skeleton className="h-5 w-full" /> : userData?.businessName || 'N/A'}
+                 </div>
+               </div>
+                <div className="space-y-2">
+                 <h4 className="font-medium">Service Category</h4>
+                 <div className="text-sm text-muted-foreground">
+                   {loading ? <Skeleton className="h-5 w-full" /> : userData?.serviceCategory || 'N/A'}
+                 </div>
+               </div>
+                {/* Add more provider details here */}
+             </>
+           )}
+
+
+           {/* Add other common profile details here as needed */}
 
           <Button onClick={handleLogout} variant="destructive" className="w-full mt-4">
             Logout
