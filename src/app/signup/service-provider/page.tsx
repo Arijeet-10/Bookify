@@ -1,20 +1,21 @@
 'use client';
-import React, {useState} from 'react';
-import {useRouter} from 'next/navigation';
-import {createUserWithEmailAndPassword, updateProfile} from 'firebase/auth'; // Added updateProfile
-import {auth, db} from '@/lib/firebase';
-import {Button} from "@/components/ui/button";
-import {Input} from '@/components/ui/input';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Label} from '@/components/ui/label';
-import {setDoc, doc} from 'firebase/firestore';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { Button } from "@/components/ui/button";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { setDoc, doc } from 'firebase/firestore';
 import Link from 'next/link';
-import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {z} from 'zod';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import { serviceCategories } from '@/lib/constants'; // Import service categories
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { serviceCategories } from '@/lib/constants';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Define Zod schema for validation
 const signUpSchema = z.object({
@@ -26,72 +27,74 @@ const signUpSchema = z.object({
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
-  path: ['confirmPassword'], // Set the error path to confirmPassword field
+  path: ['confirmPassword'],
 });
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
-
 const ServiceProviderSignUpPage = () => {
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-        fullName: '',
-        businessName: '',
-        serviceCategory: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+      fullName: '',
+      businessName: '',
+      serviceCategory: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
-
 
   const onSubmit = async (data: SignUpFormValues) => {
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
-       // Update Firebase Auth profile display name
-        if (auth.currentUser) {
-          await updateProfile(auth.currentUser, { displayName: data.fullName });
-        }
+      // Update Firebase Auth profile display name
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: data.fullName });
+      }
 
-      // 1. Store basic user info with role in 'users' collection
-      // Correctly includes the role 'serviceProvider'
+      // Store basic user info with role in 'users' collection
       await setDoc(doc(db, "users", user.uid), {
         role: 'serviceProvider',
         email: data.email,
         fullName: data.fullName,
       });
 
-      // 2. Store detailed provider info in 'serviceProviders' collection
+      // Store detailed provider info in 'serviceProviders' collection
       await setDoc(doc(db, "serviceProviders", user.uid), {
-        userId: user.uid, // Link back to the user ID in the 'users' collection
+        userId: user.uid,
         email: data.email,
         fullName: data.fullName,
         businessName: data.businessName,
         serviceCategory: data.serviceCategory,
-        // Add other provider-specific fields here later (e.g., address, phone)
       });
 
-
-      // Redirect to a service provider dashboard or setup page after signup
-      router.push('/service-provider-dashboard'); // Adjust this route as needed
+      setSuccess("Account created successfully! Redirecting...");
+      
+      // Redirect after a short delay to show success message
+      setTimeout(() => {
+        router.push('/service-provider-dashboard');
+      }, 1500);
+      
     } catch (err: any) {
-       if (err.code === 'auth/email-already-in-use') {
+      if (err.code === 'auth/email-already-in-use') {
         setError('This email address is already in use. Try logging in or use a different email.');
       } else if (err.code === 'auth/weak-password') {
-         setError('The password is too weak. Please choose a stronger password.');
-       } else {
+        setError('The password is too weak. Please choose a stronger password.');
+      } else {
         setError('Failed to create account. Please try again.');
-         console.error("Signup Error:", err);
+        console.error("Signup Error:", err);
       }
     } finally {
       setLoading(false);
@@ -99,50 +102,113 @@ const ServiceProviderSignUpPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
-      <Card className="w-full max-w-md dark:bg-card">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Service Provider Signup</CardTitle>
-          <CardDescription>Create an account to list your services.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+    <div className="flex min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-950">
+      {/* Left panel with image/branding for desktop */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary/10 flex-col justify-between p-12">
+        <div>
+          <h1 className="text-3xl font-bold text-primary">Service Connect</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Your business, our platform.</p>
+        </div>
+        
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg mb-2">Grow Your Business</h3>
+            <p className="text-gray-600 dark:text-gray-300">Connect with new customers and expand your reach.</p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg mb-2">Easy Scheduling</h3>
+            <p className="text-gray-600 dark:text-gray-300">Manage appointments and bookings all in one place.</p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <h3 className="font-semibold text-lg mb-2">Secure Payments</h3>
+            <p className="text-gray-600 dark:text-gray-300">Get paid faster with our integrated payment system.</p>
+          </div>
+        </div>
+        
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          © 2025 Service Connect. All rights reserved.
+        </div>
+      </div>
+      
+      {/* Right panel with form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+              Create your provider account
+            </h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Join our marketplace and start growing your business today
+            </p>
+          </div>
+          
+          {error && (
+            <Alert variant="destructive" className="animate-in fade-in">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert className="bg-green-50 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 animate-in fade-in">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your full name" {...field} disabled={loading}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="businessName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Shop Name / Business Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your business name" {...field} disabled={loading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 dark:text-gray-300">Full Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your full name" 
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700" 
+                          {...field} 
+                          disabled={loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="businessName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 dark:text-gray-300">Business Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your business name" 
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700" 
+                          {...field} 
+                          disabled={loading} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="serviceCategory"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service Category</FormLabel>
+                    <FormLabel className="text-gray-700 dark:text-gray-300">Service Category</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
                           <SelectValue placeholder="Select a service category" />
                         </SelectTrigger>
                       </FormControl>
@@ -158,67 +224,97 @@ const ServiceProviderSignUpPage = () => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Email</FormLabel>
+                    <FormLabel className="text-gray-700 dark:text-gray-300">Business Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter your business email" {...field} disabled={loading}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter your password (min. 6 characters)" {...field} disabled={loading}/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Confirm your password" {...field} disabled={loading}/>
+                      <Input 
+                        type="email" 
+                        placeholder="yourname@business.com" 
+                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700" 
+                        {...field} 
+                        disabled={loading}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 dark:text-gray-300">Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Min. 6 characters" 
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700" 
+                          {...field} 
+                          disabled={loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 dark:text-gray-300">Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Re-enter password" 
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700" 
+                          {...field} 
+                          disabled={loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <Button disabled={loading} type="submit" className="w-full mt-4">
-                {loading ? 'Creating account...' : 'Sign Up as Service Provider'}
-              </Button>
+              <div className="pt-2">
+                <Button 
+                  disabled={loading} 
+                  type="submit" 
+                  className="w-full py-6 text-lg font-medium transition-all hover:scale-[1.01]"
+                >
+                  {loading ? 'Creating your account...' : 'Create Provider Account'}
+                </Button>
+              </div>
             </form>
           </Form>
-           <p className="text-sm text-center text-muted-foreground mt-4">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline">
-              Login
-            </Link>
-          </p>
-           <p className="text-sm text-center text-muted-foreground mt-2">
-             Signing up as a User?{' '}
-            <Link href="/signup/user" className="text-primary hover:underline">
-              Click here
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+
+          <div className="text-center space-y-2 pt-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Already have an account?{' '}
+              <Link href="/login" className="font-medium text-primary hover:underline">
+                Sign in
+              </Link>
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Looking to create a customer account?{' '}
+              <Link href="/signup/user" className="font-medium text-primary hover:underline">
+                Sign up as user
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

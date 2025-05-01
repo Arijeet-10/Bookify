@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // Added useRouter
+import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, collection, query, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -12,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { serviceCategories } from '@/lib/constants';
 import { Icons } from '@/components/icons';
-import { PlusIcon, MinusIcon, Trash2 } from 'lucide-react'; // Added icons
-import { Separator } from '@/components/ui/separator'; // Added Separator
+import { Badge } from '@/components/ui/badge';
+import { PlusIcon, MinusIcon, Trash2, Clock, MapPin, CalendarIcon, CheckCircle2, CalendarCheck } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 // Define structure for provider and service data
 interface ServiceProviderData {
@@ -26,16 +26,14 @@ interface ServiceProviderData {
   imageURL?: string;
   rating?: string;
   reviews?: string;
-  // Add other relevant fields
 }
 
 interface Service {
   id: string;
   name: string;
-  price: string; // Keep as string, parse when calculating
+  price: string;
   duration: string;
   createdAt?: Timestamp;
-  // Add other relevant fields
 }
 
 // Interface for items in the booking summary
@@ -45,15 +43,15 @@ interface BookingItem extends Service {
 
 const ProviderServicePage = () => {
   const params = useParams();
-  const providerId = params.providerId as string; // Get providerId from URL
-  const router = useRouter(); // Initialize router
+  const providerId = params.providerId as string;
+  const router = useRouter();
 
   const [providerData, setProviderData] = useState<ServiceProviderData | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loadingProvider, setLoadingProvider] = useState(true);
   const [loadingServices, setLoadingServices] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedServices, setSelectedServices] = useState<BookingItem[]>([]); // State for selected services
+  const [selectedServices, setSelectedServices] = useState<BookingItem[]>([]);
 
   // Fetch provider details
   useEffect(() => {
@@ -73,8 +71,6 @@ const ProviderServicePage = () => {
           setProviderData({ id: providerDocSnap.id, ...providerDocSnap.data() } as ServiceProviderData);
         } else {
           setError("Service provider not found.");
-           // Optionally redirect if provider not found
-           // router.push('/search');
         }
       } catch (err) {
         console.error('Error fetching provider details:', err);
@@ -85,36 +81,36 @@ const ProviderServicePage = () => {
     };
 
     fetchProviderDetails();
-  }, [providerId, router]); // Add router to dependency array if used for redirect
+  }, [providerId]);
 
   // Fetch services for the provider
   useEffect(() => {
     const fetchServices = async () => {
-      if (!providerId) return; // Don't fetch if providerId is missing
+      if (!providerId) return;
       setLoadingServices(true);
-      setError(null); // Reset error specific to services
+      setError(null);
       try {
         const servicesCollectionRef = collection(db, 'serviceProviders', providerId, 'services');
-        const q = query(servicesCollectionRef); // Add ordering if needed
+        const q = query(servicesCollectionRef);
         const querySnapshot = await getDocs(q);
         const fetchedServices: Service[] = [];
         querySnapshot.forEach((doc) => {
           fetchedServices.push({ id: doc.id, ...doc.data() } as Service);
         });
-        fetchedServices.sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+        fetchedServices.sort((a, b) => a.name.localeCompare(b.name));
         setServices(fetchedServices);
       } catch (err) {
         console.error('Error fetching services:', err);
-        setError('Failed to load services.'); // Set error specific to services
+        setError('Failed to load services.');
       } finally {
         setLoadingServices(false);
       }
     };
 
-    if (providerId) { // Fetch services only if providerId is valid
+    if (providerId) {
         fetchServices();
     }
-  }, [providerId]); // Depend on providerId
+  }, [providerId]);
 
   // Helper function to get category details
   const getCategory = (categoryId: string) => {
@@ -137,21 +133,19 @@ const ProviderServicePage = () => {
     setSelectedServices(prev => {
       const existingItem = prev.find(item => item.id === service.id);
       if (existingItem) {
-        // Optionally increase quantity if needed in future, for now, just add once
-        // return prev.map(item => item.id === service.id ? { ...item, quantity: item.quantity + 1 } : item);
         toast({
-            title: "Already Added",
-            description: `"${service.name}" is already in your booking summary.`,
-            variant: "default", // Or 'destructive' if you prefer
+            title: "Already Selected",
+            description: `"${service.name}" is already in your booking.`,
+            variant: "default",
         })
-        return prev; // Or handle quantity increase
+        return prev;
       } else {
         return [...prev, { ...service, quantity: 1 }];
       }
     });
     toast({
       title: "Service Added",
-      description: `"${service.name}" added to booking.`,
+      description: `"${service.name}" added to your booking.`,
     });
   };
 
@@ -165,11 +159,11 @@ const ProviderServicePage = () => {
     });
   };
 
-  // Function to parse price string (e.g., "₹500" or "500") into a number
+  // Function to parse price string
   const parsePrice = (priceStr: string): number => {
-    const numericString = priceStr.replace(/[^0-9.]/g, ''); // Remove non-numeric characters except dot
+    const numericString = priceStr.replace(/[^0-9.]/g, '');
     const price = parseFloat(numericString);
-    return isNaN(price) ? 0 : price; // Return 0 if parsing fails
+    return isNaN(price) ? 0 : price;
   };
 
   // Calculate total price
@@ -180,190 +174,360 @@ const ProviderServicePage = () => {
   }, [selectedServices]);
 
   const handleProceedToBook = () => {
-      // Encode selected services for the query parameter
       const servicesQueryParam = encodeURIComponent(JSON.stringify(selectedServices.map(s => ({id: s.id, name: s.name, price: s.price, duration: s.duration}))));
-
-      // Navigate to the booking confirmation page
       router.push(`/booking/${providerId}?services=${servicesQueryParam}&total=${totalPrice.toFixed(2)}`);
   }
 
+  // Calculate estimated total time
+  const totalDuration = useMemo(() => {
+    let minutes = 0;
+    selectedServices.forEach(service => {
+      // Extract numeric part of duration (assuming format like "30 mins" or "1 hr")
+      const durationMatch = service.duration.match(/(\d+)/);
+      if (durationMatch && durationMatch[1]) {
+        const value = parseInt(durationMatch[1], 10);
+        if (!isNaN(value)) {
+          // If duration contains "hr" or "hour", convert to minutes
+          if (service.duration.includes('hr') || service.duration.includes('hour')) {
+            minutes += value * 60;
+          } else {
+            minutes += value;
+          }
+        }
+      }
+    });
+    
+    // Format as hours and minutes
+    if (minutes < 60) {
+      return `${minutes} mins`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const remainingMins = minutes % 60;
+      return remainingMins > 0 ? `${hours} hr ${remainingMins} mins` : `${hours} hr`;
+    }
+  }, [selectedServices]);
+
   return (
-    // Removed flex flex-col and min-h-screen here, added padding to accommodate summary card + footer
-    <div className="bg-gray-100 dark:bg-background p-4 pb-[150px] md:pb-[120px]"> {/* Adjusted padding bottom */}
-      {loadingProvider ? (
-        <Card className="w-full max-w-4xl mx-auto dark:bg-card p-6">
-          {/* Provider Header Skeleton */}
-          <div className="flex items-center gap-6 mb-6">
-            <Skeleton className="w-28 h-28 rounded-full flex-shrink-0" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-5 w-1/2" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen pb-24">
+      {/* Hero section with breadcrumb */}
+      <div className="bg-gradient-to-b from-blue-50 to-slate-50 dark:from-slate-800 dark:to-slate-900 py-6 mb-6">
+        <div className="container mx-auto px-4">
+          <div className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            <button onClick={() => router.push('/search')} className="hover:text-blue-600 dark:hover:text-blue-400">
+              Search
+            </button>
+            <span className="mx-2">›</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {loadingProvider ? 'Loading...' : providerData?.businessName || 'Provider'}
+            </span>
           </div>
-          <Separator className="mb-6"/>
-           {/* Services List Skeleton */}
-          <Skeleton className="h-8 w-1/3 mb-4" />
-           <ul className="space-y-4">
-              {[...Array(3)].map((_, index) => (
-                  <li key={index} className="border p-4 rounded-md flex justify-between items-center dark:border-gray-700">
-                      <div>
-                          <Skeleton className="h-5 w-32 mb-2" />
-                          <Skeleton className="h-4 w-48" />
-                      </div>
-                       <div className="flex items-center gap-2">
-                           <Skeleton className="h-6 w-20" />
-                           <Skeleton className="h-9 w-9 rounded-md" />
-                       </div>
-                  </li>
-              ))}
-          </ul>
-        </Card>
-      ) : error && !providerData ? (
-         <Card className="w-full max-w-4xl mx-auto dark:bg-card p-6 text-center">
-           <CardTitle className="text-destructive">Error</CardTitle>
-           <CardDescription className="text-destructive mt-2">{error}</CardDescription>
-           <Button onClick={() => router.back()} className="mt-4">Go Back</Button>
-         </Card>
-      ) : providerData ? (
-        <div className="w-full max-w-4xl mx-auto space-y-6"> {/* Wrap content in a div */}
-        {/* Provider Details Card */}
-         <Card className="dark:bg-card">
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
-               <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border flex-shrink-0">
-                 <AvatarImage
-                  src={providerData.imageURL || getPlaceholderImage(providerData.serviceCategory)}
-                  alt={providerData.businessName}
-                  className="object-cover"
-                  data-ai-hint={`logo ${providerData.serviceCategory}`}
-                 />
-                 <AvatarFallback className="text-4xl">
-                  {providerData.businessName.charAt(0)}
-                 </AvatarFallback>
-               </Avatar>
-              <div className="flex-1 space-y-1">
-                <CardTitle className="text-2xl sm:text-3xl font-bold">{providerData.businessName}</CardTitle>
-                <CardDescription className="text-muted-foreground">{providerData.fullName}</CardDescription>
-                 <p className="text-sm text-muted-foreground pt-1">{providerData.address || 'Address not provided'}</p>
-                 <p className="text-sm text-muted-foreground">Category: {getCategory(providerData.serviceCategory)?.name || providerData.serviceCategory}</p>
-                {(providerData.rating || providerData.reviews) && (
-                  <div className="flex items-center pt-1">
-                    <Icons.star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
-                    <span className="text-sm font-medium">{providerData.rating || '?'}</span>
-                    <span className="text-sm text-muted-foreground ml-1">({providerData.reviews || 'No reviews'})</span>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4">
+        {loadingProvider ? (
+          <Card className="w-full max-w-5xl mx-auto shadow-md mb-8">
+            {/* Provider Header Skeleton */}
+            <div className="p-6">
+              <div className="flex items-center gap-6 mb-6">
+                <Skeleton className="w-24 h-24 md:w-32 md:h-32 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-5 w-1/2" />
+                  <div className="flex gap-2 mt-2">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
                   </div>
+                </div>
+              </div>
+              <Separator className="my-6"/>
+              {/* Services List Skeleton */}
+              <Skeleton className="h-8 w-1/3 mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="border rounded-lg p-4 dark:border-slate-700">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <div className="flex justify-between items-center mt-4">
+                      <Skeleton className="h-5 w-1/3" />
+                      <Skeleton className="h-10 w-24 rounded-md" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        ) : error && !providerData ? (
+          <Card className="w-full max-w-5xl mx-auto shadow-md text-center p-8 mb-8">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="rounded-full bg-red-100 dark:bg-red-900/20 p-3">
+                <Icons.alertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+              <CardTitle className="text-xl text-red-600 dark:text-red-400">Error</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                {error}
+              </CardDescription>
+              <Button onClick={() => router.back()} variant="outline" className="mt-4">
+                Go Back
+              </Button>
+            </div>
+          </Card>
+        ) : providerData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {/* Main Content Column */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Provider Profile Card */}
+              <Card className="shadow-md dark:bg-slate-800/50 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 to-violet-500 h-24"></div>
+                <div className="px-6 pb-6 pt-12 relative">
+                  <Avatar className="w-24 h-24 border-4 border-white dark:border-slate-800 absolute -top-12 left-1/2 -translate-x-1/2 shadow-lg">
+                    <AvatarImage
+                      src={providerData.imageURL || getPlaceholderImage(providerData.serviceCategory)}
+                      alt={providerData.fullName}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="text-2xl bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                      {providerData.businessName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{providerData.businessName}</h1>
+                      <p className="text-slate-500 dark:text-slate-400">{providerData.fullName}</p>
+                    </div>
+                    
+                    {(providerData.rating || providerData.reviews) && (
+                      <div className="mt-2 md:mt-0 flex items-center bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full">
+                        <Icons.star className="w-5 h-5 text-amber-500 fill-current mr-1" />
+                        <span className="font-medium text-amber-700 dark:text-amber-400">{providerData.rating || '?'}</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400 ml-1">({providerData.reviews || 'No reviews'})</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {providerData.address && (
+                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
+                        <MapPin className="w-4 h-4 mr-1 text-slate-400" />
+                        {providerData.address}
+                      </div>
+                    )}
+                    
+                    <Badge variant="outline" className="flex items-center gap-1 text-sm font-normal">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                      {getCategory(providerData.serviceCategory)?.name || providerData.serviceCategory}
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+              
+              {/* Services Section */}
+              <Card className="shadow-md dark:bg-slate-800/50">
+                <CardHeader className="border-b dark:border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl">Available Services</CardTitle>
+                    <Badge variant="secondary" className="font-normal">
+                      {services.length} {services.length === 1 ? 'service' : 'services'}
+                    </Badge>
+                  </div>
+                  {error && providerData && (
+                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded">
+                      {error}
+                    </div>
+                  )}
+                </CardHeader>
+                
+                <CardContent className="p-6">
+                  {loadingServices ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, index) => (
+                        <div key={index} className="border rounded-lg p-4 dark:border-slate-700">
+                          <Skeleton className="h-6 w-3/4 mb-2" />
+                          <Skeleton className="h-4 w-1/2 mb-4" />
+                          <div className="flex justify-between items-center">
+                            <Skeleton className="h-5 w-1/3" />
+                            <Skeleton className="h-10 w-24 rounded-md" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : services.length === 0 && providerData ? (
+                    <div className="py-12 text-center">
+                      <div className="mx-auto w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-4">
+                        <Icons.alertCircle className="h-8 w-8 text-slate-400" />
+                      </div>
+                      <p className="text-slate-500 dark:text-slate-400">This provider has not listed any services yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {services.map((service) => {
+                        const isSelected = selectedServices.some(item => item.id === service.id);
+                        const formattedPrice = service.price ? (service.price.startsWith('₹') ? service.price : `₹${service.price}`) : 'N/A';
+                        
+                        return (
+                          <div 
+                            key={service.id} 
+                            className={`border rounded-lg p-4 transition-all ${
+                              isSelected 
+                                ? 'border-blue-300 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' 
+                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <h3 className="font-medium text-lg text-slate-800 dark:text-slate-100">
+                                {service.name}
+                              </h3>
+                              {isSelected && (
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                  Selected
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center text-sm text-slate-500 dark:text-slate-400 mb-4">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {service.duration || 'Duration not specified'}
+                            </div>
+                            
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-lg font-semibold text-slate-800 dark:text-slate-100">{formattedPrice}</span>
+                              <Button
+                                size="sm"
+                                variant={isSelected ? "secondary" : "default"}
+                                onClick={() => isSelected ? handleRemoveFromBooking(service.id) : handleAddToBooking(service)}
+                                className={isSelected ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50" : ""}
+                              >
+                                {isSelected ? (
+                                  <>
+                                    <MinusIcon className="h-4 w-4 mr-1" />
+                                    Remove
+                                  </>
+                                ) : (
+                                  <>
+                                    <PlusIcon className="h-4 w-4 mr-1" />
+                                    Select
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Booking Summary Column - Sticky */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-4">
+                {selectedServices.length > 0 ? (
+                  <Card className="shadow-md dark:bg-slate-800/50 overflow-hidden">
+                    <CardHeader className="bg-blue-50 dark:bg-blue-900/20 border-b dark:border-slate-700 pb-4">
+                      <div className="flex items-center">
+                        <CalendarCheck className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+                        <CardTitle className="text-lg text-blue-700 dark:text-blue-300">Booking Summary</CardTitle>
+                      </div>
+                      <CardDescription className="text-slate-500 dark:text-slate-400 mt-1">
+                        {selectedServices.length} {selectedServices.length === 1 ? 'service' : 'services'} selected
+                      </CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="p-0">
+                      <div className="max-h-64 overflow-y-auto">
+                        <ul className="divide-y dark:divide-slate-700">
+                          {selectedServices.map((item) => (
+                            <li key={item.id} className="p-4 flex items-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-slate-400 hover:text-red-500 dark:hover:text-red-400 mr-2 flex-shrink-0"
+                                onClick={() => handleRemoveFromBooking(item.id)}
+                                aria-label={`Remove ${item.name} from booking`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              
+                              <div className="flex-grow min-w-0">
+                                <p className="font-medium text-slate-800 dark:text-slate-200 truncate">{item.name}</p>
+                                <div className="flex items-center mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                  <Clock className="w-3.5 h-3.5 mr-1" />
+                                  {item.duration}
+                                </div>
+                              </div>
+                              
+                              <span className="ml-2 text-right font-medium text-slate-700 dark:text-slate-300">
+                                ₹{parsePrice(item.price).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div className="bg-slate-50 dark:bg-slate-800/70 p-4 space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-600 dark:text-slate-400">Estimated Duration:</span>
+                          <div className="flex items-center text-slate-700 dark:text-slate-300">
+                            <Clock className="w-4 h-4 mr-1 text-blue-500" />
+                            {totalDuration}
+                          </div>
+                        </div>
+                        
+                        <Separator className="my-2" />
+                        
+                        <div className="flex justify-between items-center font-medium">
+                          <span className="text-slate-800 dark:text-slate-200">Total Amount:</span>
+                          <span className="text-xl text-blue-700 dark:text-blue-300">₹{totalPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="p-4 bg-slate-50 dark:bg-slate-800/70 border-t dark:border-slate-700">
+                      <Button
+                        onClick={handleProceedToBook}
+                        disabled={totalPrice === 0 || loadingProvider || loadingServices}
+                        className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                        size="lg"
+                      >
+                        <CalendarIcon className="mr-2 h-5 w-5" />
+                        Proceed to Booking
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ) : (
+                  !loadingProvider && !loadingServices && providerData && (
+                    <Card className="shadow-md dark:bg-slate-800/50 text-center p-6">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
+                          <CalendarIcon className="h-8 w-8 text-blue-500" />
+                        </div>
+                        <CardTitle className="text-lg mb-2">Start Your Booking</CardTitle>
+                        <CardDescription className="text-slate-500 dark:text-slate-400 mb-4">
+                          Select services from the list to add them to your booking
+                        </CardDescription>
+                        <div className="w-full max-w-xs mx-auto mt-2">
+                          <Button 
+                            variant="outline" 
+                            className="w-full border-dashed border-2"
+                            onClick={() => {
+                              document.querySelector('.services-section')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                          >
+                            <PlusIcon className="mr-2 h-4 w-4" />
+                            Select Services
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  )
                 )}
               </div>
-            </CardHeader>
-        </Card>
-
-        {/* Services List Section */}
-         <Card className="dark:bg-card">
-             <CardHeader>
-                 <CardTitle className="text-2xl">Select Services</CardTitle>
-                 {error && providerData && <CardDescription className="text-destructive pt-2">{error}</CardDescription>}
-             </CardHeader>
-             <CardContent>
-                 {loadingServices ? (
-                     <ul className="space-y-4">
-                         {[...Array(3)].map((_, index) => (
-                             <li key={index} className="border p-4 rounded-md flex justify-between items-center dark:border-gray-700">
-                                 <div>
-                                     <Skeleton className="h-5 w-32 mb-2" />
-                                     <Skeleton className="h-4 w-48" />
-                                 </div>
-                                  <div className="flex items-center gap-2">
-                                      <Skeleton className="h-6 w-20" />
-                                      <Skeleton className="h-9 w-9 rounded-md" />
-                                  </div>
-                             </li>
-                         ))}
-                     </ul>
-                 ) : services.length === 0 && providerData ? ( // Show only if provider exists but has no services
-                     <p className="text-center text-muted-foreground py-8">This provider has not listed any services yet.</p>
-                 ) : (
-                     <ul className="space-y-4">
-                         {services.map((service) => {
-                             const isSelected = selectedServices.some(item => item.id === service.id);
-                             const formattedPrice = service.price ? (service.price.startsWith('₹') ? service.price : `₹${service.price}`) : 'N/A';
-                             return (
-                                 <li key={service.id} className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center dark:border-muted hover:bg-muted/50 transition-colors">
-                                     <div className="mb-3 sm:mb-0 flex-1 mr-4">
-                                         <p className="font-semibold text-lg">{service.name}</p>
-                                         <p className="text-sm text-muted-foreground">
-                                              Duration: {service.duration || 'N/A'}
-                                         </p>
-                                     </div>
-                                     <div className="flex items-center gap-4 self-end sm:self-center flex-shrink-0">
-                                         <span className="font-semibold text-md w-20 text-right">{formattedPrice}</span>
-                                         <Button
-                                           size="sm"
-                                           variant={isSelected ? "secondary" : "default"} // Changed variant logic
-                                           onClick={() => isSelected ? handleRemoveFromBooking(service.id) : handleAddToBooking(service)}
-                                           aria-label={isSelected ? `Remove ${service.name} from booking` : `Add ${service.name} to booking`}
-                                          >
-                                              {isSelected ? <MinusIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
-                                              <span className="ml-1">{isSelected ? 'Added' : 'Add'}</span>
-                                          </Button>
-                                     </div>
-                                 </li>
-                             );
-                          })}
-                     </ul>
-                 )}
-             </CardContent>
-         </Card>
-        </div>
-      ) : null}
-
-
-        {/* Booking Summary Card - Non-Sticky */}
-        {selectedServices.length > 0 && (
-            // Removed sticky positioning classes, added margin-top for spacing
-            <div className="w-full max-w-4xl mx-auto mt-6">
-             <Card className="dark:bg-card border dark:border-muted shadow-md">
-                 <CardHeader className="p-4 border-b dark:border-muted">
-                     <CardTitle className="text-lg">Booking Summary</CardTitle>
-                 </CardHeader>
-                 <CardContent className="p-4 space-y-2 max-h-48 overflow-y-auto"> {/* Added max-height and scroll */}
-                     {selectedServices.map((item, index) => (
-                         <React.Fragment key={item.id}>
-                             <div className="flex justify-between items-center text-sm">
-                                 <div className="flex items-center">
-                                     <Button
-                                         variant="ghost"
-                                         size="icon"
-                                         className="h-6 w-6 mr-2"
-                                         onClick={() => handleRemoveFromBooking(item.id)}
-                                         aria-label={`Remove ${item.name} from booking`}
-                                     >
-                                         <Trash2 className="h-4 w-4 text-destructive" />
-                                     </Button>
-                                     <p className="font-medium truncate pr-2">{item.name}</p>
-                                 </div>
-                                  <p className="text-muted-foreground flex-shrink-0">₹{parsePrice(item.price).toFixed(2)}</p>
-                             </div>
-                             {index < selectedServices.length - 1 && <Separator className="my-1 opacity-50" />}
-                         </React.Fragment>
-                     ))}
-                 </CardContent>
-                 <CardFooter className="p-4 border-t dark:border-muted flex justify-between items-center">
-                     <div className="font-bold text-lg">
-                         <span>Total: </span>
-                         <span>₹{totalPrice.toFixed(2)}</span>
-                     </div>
-                     <Button
-                         onClick={handleProceedToBook}
-                         disabled={totalPrice === 0 || loadingProvider || loadingServices}
-                         size="lg"
-                     >
-                         Proceed to Book
-                     </Button>
-                 </CardFooter>
-             </Card>
             </div>
-        )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };

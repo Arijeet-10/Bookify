@@ -1,4 +1,3 @@
-
 import type { ComponentProps } from "react";
 import {
   MapPin,
@@ -17,8 +16,10 @@ import {
   User,
   LayoutDashboard, // Added for dashboard icon
   HandHeart, // Potential icon for massage/beauty
+  AlertCircle,
+  SearchX,
+  Filter,
 } from "lucide-react";
-
 
 // Define Icons object by directly assigning Lucide components
 // We use functional components to allow passing props like className, size, etc.
@@ -39,6 +40,10 @@ export const Icons = {
   user: (props: ComponentProps<typeof User>) => <User {...props} />,
   tooth: (props: ComponentProps<typeof Smile>) => <Smile {...props} />, // Placeholder for Tooth, using Smile
   layoutDashboard: (props: ComponentProps<typeof LayoutDashboard>) => <LayoutDashboard {...props} />, // Added Dashboard
-   // Consider replacing Smile placeholder for massage/beauty if HandHeart fits better
+  // Consider replacing Smile placeholder for massage/beauty if HandHeart fits better
   massage: (props: ComponentProps<typeof HandHeart>) => <HandHeart {...props} />,
+  // Additional icons needed for the redesigned UI
+  alertCircle: (props: ComponentProps<typeof AlertCircle>) => <AlertCircle {...props} />,
+  searchX: (props: ComponentProps<typeof SearchX>) => <SearchX {...props} />,
+  filter: (props: ComponentProps<typeof Filter>) => <Filter {...props} />,
 };
