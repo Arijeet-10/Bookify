@@ -51,15 +51,19 @@ const ProfilePage = () => {
                 const providerDocSnap = await getDoc(providerDocRef);
                 if (providerDocSnap.exists()) {
                     const providerData = providerDocSnap.data();
+                    // Correctly merge provider data into profileData
                     profileData = {
                         ...profileData,
-                        businessName: providerData.businessName,
-                        serviceCategory: providerData.serviceCategory,
+                        businessName: providerData.businessName, // Use correct field name from Firestore
+                        serviceCategory: providerData.serviceCategory, // Use correct field name from Firestore
                          // Add other provider fields as needed
                     };
                 } else {
                      console.warn("Service provider document not found in Firestore for user:", user.uid);
                      // Optionally handle this case, maybe show a message or default values
+                     // Ensure the fields exist even if the doc doesn't, to avoid undefined issues later
+                     profileData.businessName = 'N/A (Doc Missing)';
+                     profileData.serviceCategory = 'N/A (Doc Missing)';
                 }
             }
              setUserData(profileData);
