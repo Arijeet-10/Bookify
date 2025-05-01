@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -62,8 +61,8 @@ const ProfilePage = () => {
                      console.warn("Service provider document not found in Firestore for user:", user.uid);
                      // Optionally handle this case, maybe show a message or default values
                      // Ensure the fields exist even if the doc doesn't, to avoid undefined issues later
-                     profileData.businessName = 'N/A (Doc Missing)';
-                     profileData.serviceCategory = 'N/A (Doc Missing)';
+                     profileData.businessName = 'N/A'; // Use 'N/A' as fallback
+                     profileData.serviceCategory = 'N/A'; // Use 'N/A' as fallback
                 }
             }
              setUserData(profileData);
