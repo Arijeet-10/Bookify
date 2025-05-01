@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Icons } from '@/components/icons.tsx'; // Updated import path
+import { Icons } from '@/components/icons'; // Updated import path
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,9 @@ const ServiceProviderFooter = () => {
   const navItems = [
     { href: '/service-provider-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
     { href: '/service-provider-calendar', label: 'Calendar', icon: Icons.calendar }, // Example link
-    // Add more relevant links for service providers
+    // Changed 'Search' label to 'Services'. Kept href and icon for now.
+    // If the destination page changes, update href. If the icon should change, update icon.
+    { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase }, // Changed label, kept icon for now, updated href assumption
     { href: '/profile', label: 'Profile', icon: Icons.user },
   ];
 
