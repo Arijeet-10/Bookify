@@ -149,9 +149,8 @@ const BookingConfirmationPageContent = () => {
 
       const appointmentTimestamp = Timestamp.fromDate(appointmentDateTime);
 
-      // Store the appointment in Firestore
-      const appointmentsRef = collection(db, 'appointments');
-      await addDoc(appointmentsRef, {
+      // Data to be stored in the 'appointments' collection
+      const appointmentData = {
         userId: user.uid,
         userName: user.displayName || user.email, // Use display name or email
         providerId: providerId,
@@ -161,7 +160,11 @@ const BookingConfirmationPageContent = () => {
         date: appointmentTimestamp, // Store the combined Timestamp
         status: 'confirmed', // Initial status
         createdAt: Timestamp.now(),
-      });
+      };
+
+      // Store the appointment in Firestore
+      const appointmentsRef = collection(db, 'appointments');
+      await addDoc(appointmentsRef, appointmentData); // Pass the structured data
 
       // Show success toast notification
       toast({
