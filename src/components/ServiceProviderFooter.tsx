@@ -13,9 +13,8 @@ const ServiceProviderFooter = () => {
   const navItems = [
     { href: '/service-provider-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
     { href: '/service-provider-calendar', label: 'Calendar', icon: Icons.calendar }, // Example link
-    // Changed 'Search' label to 'Services'. Kept href and icon for now.
-    // If the destination page changes, update href. If the icon should change, update icon.
-    { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase }, // Changed label, kept icon for now, updated href assumption
+    // Updated href to point to the new services page
+    { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase },
     { href: '/profile', label: 'Profile', icon: Icons.user },
   ];
 
