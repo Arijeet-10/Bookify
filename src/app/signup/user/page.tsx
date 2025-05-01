@@ -1,4 +1,3 @@
-
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -27,6 +26,7 @@ const UserSignUpPage = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       // Ensure Firestore document is created or updated for Google sign-in users in the 'users' collection
+      // Correctly includes the role 'user'
       await setDoc(doc(db, "users", user.uid), {
         role: 'user', // Always 'user' for this page
         email: user.email,
@@ -72,6 +72,7 @@ const UserSignUpPage = () => {
       }
 
       // Store user details in Firestore 'users' collection with the 'user' role
+      // Correctly includes the role 'user'
       await setDoc(doc(db, "users", userCredential.user.uid), {
         role: 'user', // Explicitly set role to 'user'
         email: email,

@@ -1,4 +1,3 @@
-
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -65,6 +64,7 @@ const ServiceProviderSignUpPage = () => {
         }
 
       // 1. Store basic user info with role in 'users' collection
+      // Correctly includes the role 'serviceProvider'
       await setDoc(doc(db, "users", user.uid), {
         role: 'serviceProvider',
         email: data.email,

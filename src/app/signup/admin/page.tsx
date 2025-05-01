@@ -1,4 +1,3 @@
-
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -62,6 +61,7 @@ const AdminSignUpPage = () => {
        }
 
       // Store user details in Firestore 'users' collection with the 'admin' role
+      // Correctly includes the role 'admin'
       await setDoc(doc(db, "users", user.uid), {
         role: 'admin', // Hardcode role to 'admin'
         email: email,
