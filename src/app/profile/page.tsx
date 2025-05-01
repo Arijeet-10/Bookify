@@ -89,7 +89,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="items-center text-center">
           <Avatar className="w-24 h-24 mb-4">
@@ -113,9 +113,10 @@ const ProfilePage = () => {
           {error && <p className="text-red-500 text-center">{error}</p>}
           <div className="space-y-2">
             <h4 className="font-medium">Email</h4>
-            <p className="text-sm text-muted-foreground">
+             {/* Changed p to div to avoid hydration error with Skeleton */}
+            <div className="text-sm text-muted-foreground">
                {loading ? <Skeleton className="h-5 w-full" /> : userData?.email || 'No email provided'}
-            </p>
+            </div>
           </div>
            {/* Add more profile details here as needed */}
 
