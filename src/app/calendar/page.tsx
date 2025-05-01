@@ -84,7 +84,9 @@ const CalendarPage = () => {
       console.error('Error fetching appointments:', err);
       // Check if the error is the specific "index required" error
       if (err.code === 'failed-precondition' && err.message.includes('index')) {
-           setError(`Firestore query requires an index. Please create it in the Firebase Console (check the developer console for the exact link needed for the users/{userId}/appointments subcollection query).`);
+           // Provide a more user-friendly message and instructions for the developer
+           setError(`Firestore query requires an index for the 'users/{userId}/appointments' subcollection, ordered by 'date'. Please create this composite index in the Firebase Console. Check the developer console for the exact error message and index creation link.`);
+           console.error("Index creation required. Follow the link in the Firestore console or use the Firebase CLI to create the index: users/{userId}/appointments -> date (ASC)"); // Log for developer
            setShowIndexAlert(true); // Show the specific alert
       } else {
            setError('Failed to load appointments. Please try again.');
@@ -143,7 +145,7 @@ const CalendarPage = () => {
    }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]">
+    <div className="flex flex-col items-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[80px]"> {/* Applied pb-[80px] */}
       <Card className="w-full max-w-4xl dark:bg-card">
         <CardHeader>
           <CardTitle className="text-2xl text-center">My Upcoming Bookings</CardTitle>
@@ -197,4 +199,3 @@ const CalendarPage = () => {
 };
 
 export default CalendarPage;
-

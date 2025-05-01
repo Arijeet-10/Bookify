@@ -12,8 +12,8 @@ const ServiceProviderFooter = () => {
 
   const navItems = [
     { href: '/service-provider-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
-    // Corrected href to point to the general calendar page
-    { href: '/calendar', label: 'Bookings', icon: Icons.calendar }, // Updated label to Bookings
+    // Corrected href to point to the new service provider bookings page
+    { href: '/service-provider-bookings', label: 'Bookings', icon: Icons.calendar },
     // Updated href to point to the new services page
     { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase },
     { href: '/profile', label: 'Profile', icon: Icons.user },
@@ -51,4 +51,3 @@ const ServiceProviderFooter = () => {
 };
 
 export default ServiceProviderFooter;
-
