@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,8 +9,9 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, query, getDocs, doc, getDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import AddServiceDialog from './_components/AddServiceDialog'; // Import the new dialog component
-import { PlusCircle, Trash2, Pencil } from 'lucide-react'; // Import icons
+import AddServiceDialog from './_components/AddServiceDialog';
+import EditServiceDialog from './_components/EditServiceDialog'; // Import the new Edit dialog component
+import { PlusCircle, Trash2, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +33,7 @@ export interface Service {
   price: string; // Keep as string for flexibility, validation can handle format
   duration: string; // e.g., "30 mins", "1 hour"
   createdAt?: Timestamp; // Optional: Track when the service was added
+  updatedAt?: Timestamp; // Optional: Track when the service was updated
 }
 
 const ServiceProviderServicesPage = () => {
@@ -39,7 +42,10 @@ const ServiceProviderServicesPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false); // State for dialog visibility
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State for edit dialog
+  const [serviceToEdit, setServiceToEdit] = useState<Service | null>(null); // State for service being edited
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -99,17 +105,32 @@ const ServiceProviderServicesPage = () => {
     }
   };
 
-  // Function called by the dialog when a new service is added successfully
+  // Function called by the Add dialog when a new service is added successfully
   const handleServiceAdded = (newServiceData: Omit<Service, 'id'>) => {
     if (user) {
-        // Optionally refetch or optimistically update the UI
-        // Refetching is simpler for now:
+        // Refetch services to include the new one
         fetchServices(user.uid);
         toast({
             title: "Service Added",
             description: `"${newServiceData.name}" has been added successfully.`,
         });
     }
+  };
+
+  // Function called by the Edit dialog when a service is updated successfully
+  const handleServiceUpdated = (updatedService: Service) => {
+      if (user) {
+          // Optimistically update the UI or refetch
+          setServices(prevServices =>
+              prevServices.map(service =>
+                  service.id === updatedService.id ? updatedService : service
+              ).sort((a, b) => a.name.localeCompare(b.name)) // Keep sorted
+          );
+          // Optional: Refetch for consistency: fetchServices(user.uid);
+          // No toast here, EditServiceDialog handles its own success toast
+      }
+      setServiceToEdit(null); // Clear the service being edited
+      setIsEditDialogOpen(false); // Close the edit dialog
   };
 
 
@@ -137,15 +158,12 @@ const ServiceProviderServicesPage = () => {
     }
   };
 
-  const handleEditService = (serviceId: string) => {
-    console.log(`Edit service ${serviceId} clicked`);
-    // TODO: Implement edit functionality (e.g., open edit dialog)
-    toast({
-        title: "Edit Functionality",
-        description: "Editing services is not yet implemented.",
-        variant: "default", // Use default variant for informational messages
-    });
-    // router.push(`/service-provider-services/edit/${serviceId}`); // Example route
+  // Function to open the edit dialog
+  const openEditDialog = (service: Service) => {
+    setServiceToEdit(service);
+    // We don't directly set isEditDialogOpen here, it's controlled by the EditServiceDialog's open state
+    // But we need a way to trigger the EditServiceDialog's trigger.
+    // The EditServiceDialog trigger will be wrapped around the Edit button itself.
   };
 
 
@@ -195,9 +213,19 @@ const ServiceProviderServicesPage = () => {
                     </p>
                   </div>
                   <div className="flex space-x-2 self-end sm:self-center">
-                    <Button variant="outline" size="sm" onClick={() => handleEditService(service.id)}>
-                       <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
-                    </Button>
+                    {/* Wrap the Edit button with the EditServiceDialog */}
+                     {user && (
+                         <EditServiceDialog
+                             userId={user.uid}
+                             service={service}
+                             onServiceUpdated={handleServiceUpdated}
+                         >
+                             <Button variant="outline" size="sm">
+                                <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                             </Button>
+                         </EditServiceDialog>
+                     )}
+
                      {/* Add Confirmation Dialog for Delete */}
                      <AlertDialog>
                        <AlertDialogTrigger asChild>
