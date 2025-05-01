@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { Icons } from '@/components/icons.tsx'; // Updated import path
+import { Icons } from '@/components/icons'; // Keep existing import path
 import Link from 'next/link'; // Import Link
 import { usePathname } from 'next/navigation'; // Import usePathname
 import { cn } from '@/lib/utils'; // Import cn for conditional classes
@@ -13,7 +13,7 @@ const Footer = () => {
   const navItems = [
     { href: '/', label: 'My Booksy', icon: Icons.home },
     { href: '/search', label: 'Search', icon: Icons.search },
-    { href: '/calendar', label: 'Calendar', icon: Icons.calendar }, // Example link, adjust href as needed
+    { href: '/calendar', label: 'Calendar', icon: Icons.calendar }, // Updated href to /calendar
     { href: '/profile', label: 'Profile', icon: Icons.user },
   ];
 
