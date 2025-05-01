@@ -13,7 +13,7 @@ const Footer = () => {
   const navItems = [
     { href: '/', label: 'My Booksy', icon: Icons.home },
     { href: '/search', label: 'Search', icon: Icons.search },
-    { href: '/calendar', label: 'Calendar', icon: Icons.calendar }, // Updated href to /calendar
+    { href: '/calendar', label: 'Bookings', icon: Icons.calendar }, // Updated label to Bookings
     { href: '/profile', label: 'Profile', icon: Icons.user },
   ];
 
@@ -49,3 +49,4 @@ const Footer = () => {
   );
 };
 export default Footer;
+
