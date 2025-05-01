@@ -1,55 +1,69 @@
-
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {createUserWithEmailAndPassword, signInWithPopup} from 'firebase/auth';
-import {auth, db, googleProvider} from '@/lib/firebase';
+import {createUserWithEmailAndPassword} from 'firebase/auth';
+import {auth, db} from '@/lib/firebase';
 import {Button} from "@/components/ui/button";
 import {Input} from '@/components/ui/input';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {setDoc, doc} from 'firebase/firestore';
 import Link from 'next/link';
+import {useForm} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {z} from 'zod';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import { serviceCategories } from '@/lib/constants'; // Import service categories
+
+// Define Zod schema for validation
+const signUpSchema = z.object({
+  fullName: z.string().min(1, { message: 'Full name is required' }),
+  businessName: z.string().min(1, { message: 'Business name is required' }),
+  serviceCategory: z.string().min(1, { message: 'Service category is required' }),
+  email: z.string().email({ message: 'Invalid email address' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'], // Set the error path to confirmPassword field
+});
+
+type SignUpFormValues = z.infer<typeof signUpSchema>;
+
 
 const ServiceProviderSignUpPage = () => {
-  const [email, setEmail] = useState('');
-  const [fullName, setFullName] = useState(''); // Or Business Name
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-   // Google Sign-In is generally not recommended for distinct roles like Service Provider
-   // as it might complicate role assignment logic. Sticking to email/password for clarity.
-   // If needed, Google Sign-In could be implemented with a check to ensure the user doesn't
-   // already exist with a different role or a prompt after sign-in to confirm details.
+  const form = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+        fullName: '',
+        businessName: '',
+        serviceCategory: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  const onSubmit = async (data: SignUpFormValues) => {
     setLoading(true);
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-     if (password.length < 6) {
-       setError('Password must be at least 6 characters long');
-       setLoading(false);
-       return;
-    }
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       // Store user details in Firestore with the 'serviceProvider' role
       await setDoc(doc(db, "users", userCredential.user.uid), {
-        role: 'serviceProvider', // Hardcode role to 'serviceProvider'
-        email: email,
-        fullName: fullName, // Consider renaming to businessName if more appropriate
-        // Add other provider-specific fields here later (e.g., service type, address)
+        role: 'serviceProvider',
+        email: data.email,
+        fullName: data.fullName,
+        businessName: data.businessName,
+        serviceCategory: data.serviceCategory,
+        // Add other provider-specific fields here later (e.g., address)
       });
 
       // Redirect to a service provider dashboard or setup page after signup
@@ -69,67 +83,112 @@ const ServiceProviderSignUpPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Service Provider Signup</CardTitle>
           <CardDescription>Create an account to list your services.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-2">
-              {/* Consider changing Label to "Business Name" if appropriate */}
-              <Label htmlFor="fullName">Full Name / Business Name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Enter your name or business name"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                required
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your full name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Business Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your business email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
+              <FormField
+                control={form.control}
+                name="businessName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Shop Name / Business Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your business name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password (min. 6 characters)"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
+              <FormField
+                control={form.control}
+                name="serviceCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a service category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {serviceCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                required
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter your business email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-             {/* Add more provider-specific fields here if needed (e.g., service category, address) */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your password (min. 6 characters)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Confirm your password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
+              {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-            <Button disabled={loading} type="submit" className="w-full mt-4">
-              {loading ? 'Creating account...' : 'Sign Up as Service Provider'}
-            </Button>
-          </form>
+              <Button disabled={loading} type="submit" className="w-full mt-4">
+                {loading ? 'Creating account...' : 'Sign Up as Service Provider'}
+              </Button>
+            </form>
+          </Form>
            <p className="text-sm text-center text-muted-foreground mt-4">
             Already have an account?{' '}
             <Link href="/login" className="text-primary hover:underline">

@@ -1,95 +1,19 @@
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
-import {Textarea} from '@/components/ui/textarea';
-import {toast} from '@/hooks/use-toast';
-import {useRouter} from 'next/navigation';
 import {Icons} from '@/components/icons';
 import {suggestServiceProvider} from '@/ai/flows/suggest-service-provider';
 import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
 import {ScrollArea} from '@/components/ui/scroll-area';
-import Footer from '@/components/Footer';
+import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
+import {Button} from '@/components/ui/button';
+import {Label} from '@/components/ui/label';
+import {toast} from '@/hooks/use-toast';
+import {useRouter} from 'next/navigation';
+import { serviceCategories, specialOffers } from '@/lib/constants'; // Import from constants
 
-
-const serviceCategories = [
-  {
-    id: '1',
-    name: 'Dental & Orthodontics',
-    image: 'https://picsum.photos/200/300',
-    icon: Icons.tooth, // Using placeholder Smile icon
-    "data-ai-hint": "dental orthodontics",
-  },
-  {
-    id: '2',
-    name: 'Health & Fitness',
-    image: 'https://picsum.photos/200/301',
-    icon: Icons.dumbbell,
-    "data-ai-hint": "health fitness gym workout",
-  },
-  {
-    id: '3',
-    name: 'Professional Services',
-    image: 'https://picsum.photos/200/302',
-    icon: Icons.briefcase,
-    "data-ai-hint": "professional business services",
-  },
-  {
-    id: '4',
-    name: 'Other',
-    image: 'https://picsum.photos/200/303',
-    icon: Icons.more,
-     "data-ai-hint": "various services",
-  },
-  {
-    id: '5',
-    name: 'Barbershop',
-    image: 'https://picsum.photos/200/304',
-    icon: Icons.scissors,
-     "data-ai-hint": "barbershop haircut",
-  },
-   {
-    id: '6',
-    name: 'Beauty Salon',
-    image: 'https://picsum.photos/200/305',
-    icon: Icons.scissors, // Reusing scissors or find a better alternative if available
-    "data-ai-hint": "beauty salon hair makeup",
-  },
-   {
-    id: '7',
-    name: 'Massage Therapy',
-    image: 'https://picsum.photos/200/306',
-    icon: Icons.smile, // Placeholder, Lucide doesn't have a specific massage icon
-    "data-ai-hint": "massage therapy spa relaxation",
-  },
-];
-
-
-const specialOffers = [
-  {
-    id: '201',
-    providerName: 'LA Barber Downey',
-    imageUrl: 'https://media.istockphoto.com/id/639607852/photo/hairstylist-serving-client-at-barber-shop.jpg?s=612x612&w=0&k=20&c=-kBoMs26KIX1Hl6uh_VLRHCtLxnLYyq9a0n7X8iu5MQ=',
-    rating: '5.0',
-    reviews: '245 reviews',
-    address: '8317 Firestone Blvd, Downey, CA 90241, 5622506313, Downey, 90241',
-    discount: 'SAVE UP TO 10%',
-     "data-ai-hint": "barber shop men haircut",
-  },
-  {
-    id: '202',
-    providerName: 'BarberEze',
-    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStor9vEAXB_4QZjTmJnggJ1H85KlvuX2ZsQw&s',
-    rating: '4.8',
-    reviews: '120 reviews',
-    address: '1140 W State Rd',
-    discount: 'SAVE UP TO 15%',
-     "data-ai-hint": "barber shop modern haircut",
-  },
-];
 
 const Home = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -152,13 +76,12 @@ const Home = () => {
               placeholder="Search services or businesses"
               className="rounded-full bg-white text-gray-700 pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-100"
             />
-            <Icons.search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
+             {/* Ensure Icons.search is rendered correctly */}
+            <Icons.search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           </div>
         </div>
       </header>
+
 
       {/* Service Categories Section */}
        <div className="flex flex-col bg-[#152226]">
@@ -208,6 +131,7 @@ const Home = () => {
                        />
                        <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1 flex flex-col items-end backdrop-blur-sm">
                           <div className="flex items-center gap-1">
+                            {/* Ensure Icons.star is rendered correctly */}
                             <Icons.star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
                             <span className="text-sm font-bold text-white">{offer.rating}</span>
                           </div>
@@ -219,15 +143,18 @@ const Home = () => {
                          {offer.providerName}
                        </CardTitle>
                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center">
+                         {/* Ensure Icons.mapPin is rendered correctly */}
                          <Icons.mapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
                          {offer.address}
                        </p>
                        <div className="flex items-center mt-3 justify-between">
                          <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
+                           {/* Ensure Icons.thumbsup is rendered correctly */}
                            <Icons.thumbsup className="w-4 h-4 mr-1" />
                            {offer.discount}
                          </span>
                          <button className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+                           {/* Ensure Icons.share is rendered correctly */}
                            <Icons.share className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                          </button>
                        </div>
