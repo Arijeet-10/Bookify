@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, {useState} from 'react';
 import {Input} from '@/components/ui/input';
-import {Icons} from '@/components/icons';
+import {Icons} from '@/components/icons.tsx'; // Updated import path
 import {Card, CardTitle, CardContent} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
@@ -34,20 +35,22 @@ const SearchPage = () => {
     {
       id: '201',
       providerName: 'LA Barber Downey',
-      imageUrl: '/images/la-barber.jpg',
+      imageUrl: 'https://media.istockphoto.com/id/639607852/photo/hairstylist-serving-client-at-barber-shop.jpg?s=612x612&w=0&k=20&c=-kBoMs26KIX1Hl6uh_VLRHCtLxnLYyq9a0n7X8iu5MQ=',
       rating: '5.0',
       reviews: '245 reviews',
       address: '8317 Firestone Blvd, Downey, CA 90241, 5622506313, Downey, 90241',
       discount: 'SAVE UP TO 10%',
+      "data-ai-hint": "barber shop men haircut"
     },
     {
       id: '202',
       providerName: 'BarberEze',
-      imageUrl: '/images/barbereeze.jpg',
+      imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStor9vEAXB_4QZjTmJnggJ1H85KlvuX2ZsQw&s',
       rating: '4.8',
       reviews: '120 reviews',
       address: '1140 W State Rd',
       discount: 'SAVE UP TO 15%',
+      "data-ai-hint": "barber shop modern haircut"
     },
   ];
 
@@ -58,7 +61,8 @@ const SearchPage = () => {
       type: 'Dental',
       address: '123 Main St',
       rating: '4.5',
-      image: '/images/dental.jpg',
+      image: 'https://picsum.photos/200/300',
+      "data-ai-hint": "dental clinic orthodontics"
     },
     {
       id: '2',
@@ -66,12 +70,13 @@ const SearchPage = () => {
       type: 'Fitness',
       address: '456 Oak Ave',
       rating: '4.8',
-      image: '/images/health.jpg',
+      image: 'https://picsum.photos/200/301',
+      "data-ai-hint": "fitness gym workout"
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-700">
+    <div className="min-h-screen bg-gray-100 text-gray-700 dark:bg-background dark:text-gray-300 pb-[60px]"> {/* Added padding-bottom */}
       <header className="p-4 flex justify-center bg-[#152226]">
         <div className="max-w-4xl w-full flex flex-col gap-4">
           <div className="flex justify-center mb-6 text-white font-bold text-xl">Bookify</div>
@@ -167,37 +172,35 @@ const SearchPage = () => {
         {/* Special Offers */}
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Special Offers</h2>
-          <div className="flex overflow-x-auto space-x-4 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {specialOffers.map(offer => (
-              <div key={offer.id} className="flex-shrink-0 w-64">
-                <div className="relative">
+              <Card key={offer.id} className="p-4" data-ai-hint={offer['data-ai-hint']}>
+                <div className="flex items-center gap-4">
                   <img
                     src={offer.imageUrl}
                     alt={offer.providerName}
-                    className="w-full h-80 object-cover rounded-lg"
+                    className="w-20 h-20 rounded-lg object-cover"
+                    width={80}
+                    height={80}
                   />
-                  <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded px-2 py-1">
-                    <div className="flex flex-col items-end">
-                      <span className="text-base font-bold text-white">{offer.rating}</span>
-                      <span className="text-xs text-white">{offer.reviews}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                    {offer.providerName}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">{offer.address}</p>
-                  <div className="flex items-center mt-2">
-                    <span className="text-xs text-teal-500 px-2 py-1 rounded-full flex items-center">
-                      <div className="flex items-center gap-1">
-                        {offer.discount}
-                        <Icons.star className="w-4 h-4 mr-1" />
+                  <div>
+                    <CardTitle className="text-lg font-semibold">{offer.providerName}</CardTitle>
+                    <CardContent className="pt-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{offer.address}</p>
+                      <div className="flex items-center mt-1">
+                        <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
+                        <span className="text-sm ml-1">{offer.rating} ({offer.reviews})</span>
                       </div>
-                    </span>
+                       <div className="flex items-center mt-2">
+                        <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full flex items-center font-medium dark:bg-teal-900 dark:text-teal-200">
+                            <Icons.thumbsup className="w-4 h-4 mr-1" />
+                            {offer.discount}
+                        </span>
+                       </div>
+                    </CardContent>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </section>
@@ -207,15 +210,21 @@ const SearchPage = () => {
           <h2 className="text-2xl font-semibold mb-4">Results</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {searchResults.map(result => (
-              <Card key={result.id} className="p-4">
+              <Card key={result.id} className="p-4" data-ai-hint={result['data-ai-hint']}>
                 <div className="flex items-center gap-4">
-                  <img src={result.image} alt={result.name} className="w-20 h-20 rounded-lg" />
+                  <img
+                   src={result.image}
+                   alt={result.name}
+                   className="w-20 h-20 rounded-lg object-cover"
+                   width={80}
+                   height={80}
+                   />
                   <div>
                     <CardTitle className="text-lg font-semibold">{result.name}</CardTitle>
-                    <CardContent>
-                      <p className="text-sm">{result.address}</p>
+                    <CardContent className="pt-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{result.address}</p>
                       <div className="flex items-center mt-1">
-                        <Icons.star className="w-4 h-4 text-yellow-500" />
+                        <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
                         <span className="text-sm ml-1">{result.rating}</span>
                       </div>
                     </CardContent>
@@ -227,8 +236,8 @@ const SearchPage = () => {
         </section>
 
         {/* Map */}
-        <section className="h-96 bg-gray-300 rounded-lg">
-          <div className="w-full h-full flex items-center justify-center">Map</div>
+        <section className="h-96 bg-gray-300 rounded-lg mb-10">
+          <div className="w-full h-full flex items-center justify-center">Map Placeholder</div>
         </section>
       </main>
     </div>

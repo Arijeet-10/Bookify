@@ -1,4 +1,5 @@
-import { Icons } from '@/components/icons';
+
+import { Icons } from '@/components/icons.tsx'; // Updated import path
 
 export const serviceCategories = [
   {
@@ -40,7 +41,7 @@ export const serviceCategories = [
     id: 'massage',
     name: 'Massage Therapy',
     image: 'https://picsum.photos/200/306',
-    icon: Icons.smile, // Placeholder, Lucide doesn't have a specific massage icon
+    icon: Icons.massage, // Use the updated massage icon
     "data-ai-hint": "massage therapy spa relaxation",
   },
   {

@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, {useState, useRef, useEffect} from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Icons} from '@/components/icons';
+import {Icons} from '@/components/icons.tsx'; // Updated import path
 import {suggestServiceProvider} from '@/ai/flows/suggest-service-provider';
 import {Avatar, AvatarImage, AvatarFallback} from '@/components/ui/avatar';
 import {ScrollArea} from '@/components/ui/scroll-area';
@@ -13,6 +14,7 @@ import {Label} from '@/components/ui/label';
 import {toast} from '@/hooks/use-toast';
 import {useRouter} from 'next/navigation';
 import { serviceCategories, specialOffers } from '@/lib/constants'; // Import from constants
+import Footer from '@/components/Footer'; // Import Footer
 
 
 const Home = () => {
@@ -82,9 +84,8 @@ const Home = () => {
         </div>
       </header>
 
-
-      {/* Service Categories Section */}
-       <div className="flex flex-col bg-[#152226]">
+       {/* Service Categories Section */}
+        <div className="flex flex-col bg-[#152226]">
          <section className="p-4 pb-8 flex items-center overflow-x-auto">
            <ScrollArea className="w-full">
              <div className="flex space-x-4 p-2">
