@@ -12,7 +12,8 @@ const ServiceProviderFooter = () => {
 
   const navItems = [
     { href: '/service-provider-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
-    { href: '/service-provider-calendar', label: 'Calendar', icon: Icons.calendar }, // Example link
+    // Corrected href to point to the general calendar page
+    { href: '/calendar', label: 'Calendar', icon: Icons.calendar },
     // Updated href to point to the new services page
     { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase },
     { href: '/profile', label: 'Profile', icon: Icons.user },
