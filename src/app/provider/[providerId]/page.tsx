@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -190,157 +191,181 @@ const ProviderServicePage = () => {
     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-background p-4 pb-[80px]"> {/* Increased pb */}
       {loadingProvider ? (
         <Card className="w-full max-w-4xl mx-auto dark:bg-card p-6">
-          <Skeleton className="h-8 w-3/4 mb-4" />
-          <Skeleton className="h-6 w-1/2 mb-6" />
-          <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="w-24 h-24 rounded-lg" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-full" />
+          {/* Provider Header Skeleton */}
+          <div className="flex items-center gap-6 mb-6">
+            <Skeleton className="w-28 h-28 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-5 w-1/2" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
           </div>
+          <Separator className="mb-6"/>
+           {/* Services List Skeleton */}
+          <Skeleton className="h-8 w-1/3 mb-4" />
+           <ul className="space-y-4">
+              {[...Array(3)].map((_, index) => (
+                  <li key={index} className="border p-4 rounded-md flex justify-between items-center dark:border-gray-700">
+                      <div>
+                          <Skeleton className="h-5 w-32 mb-2" />
+                          <Skeleton className="h-4 w-48" />
+                      </div>
+                       <div className="flex items-center gap-2">
+                           <Skeleton className="h-6 w-20" />
+                           <Skeleton className="h-9 w-9 rounded-md" />
+                       </div>
+                  </li>
+              ))}
+          </ul>
         </Card>
       ) : error && !providerData ? (
          <Card className="w-full max-w-4xl mx-auto dark:bg-card p-6 text-center">
            <CardTitle className="text-destructive">Error</CardTitle>
-           <CardDescription className="text-destructive">{error}</CardDescription>
+           <CardDescription className="text-destructive mt-2">{error}</CardDescription>
            <Button onClick={() => router.back()} className="mt-4">Go Back</Button>
          </Card>
       ) : providerData ? (
-        <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
-          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-             <Avatar className="w-20 h-20 sm:w-24 sm:h-24 border flex-shrink-0">
-               <AvatarImage
-                src={providerData.imageURL || getPlaceholderImage(providerData.serviceCategory)}
-                alt={providerData.businessName}
-                className="object-cover"
-                data-ai-hint={`logo ${providerData.serviceCategory}`}
-               />
-               <AvatarFallback className="text-3xl">
-                {providerData.businessName.charAt(0)}
-               </AvatarFallback>
-             </Avatar>
-            <div className="flex-1">
-              <CardTitle className="text-2xl sm:text-3xl font-bold">{providerData.businessName}</CardTitle>
-              <CardDescription className="text-muted-foreground mt-1">{providerData.fullName}</CardDescription>
-              <p className="text-sm text-muted-foreground mt-2">{providerData.address || 'Address not provided'}</p>
-              <p className="text-sm text-muted-foreground">Category: {getCategory(providerData.serviceCategory)?.name || providerData.serviceCategory}</p>
-              {(providerData.rating || providerData.reviews) && (
-                <div className="flex items-center mt-2">
-                  <Icons.star className="w-4 h-4 text-yellow-500 fill-current" />
-                  <span className="text-sm ml-1">{providerData.rating || '?'} ({providerData.reviews || 'No reviews'})</span>
-                </div>
-              )}
-            </div>
-          </CardHeader>
+        <>
+        {/* Provider Details Card */}
+         <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
+               <Avatar className="w-24 h-24 sm:w-28 sm:h-28 border flex-shrink-0">
+                 <AvatarImage
+                  src={providerData.imageURL || getPlaceholderImage(providerData.serviceCategory)}
+                  alt={providerData.businessName}
+                  className="object-cover"
+                  data-ai-hint={`logo ${providerData.serviceCategory}`}
+                 />
+                 <AvatarFallback className="text-4xl">
+                  {providerData.businessName.charAt(0)}
+                 </AvatarFallback>
+               </Avatar>
+              <div className="flex-1 space-y-1">
+                <CardTitle className="text-2xl sm:text-3xl font-bold">{providerData.businessName}</CardTitle>
+                <CardDescription className="text-muted-foreground">{providerData.fullName}</CardDescription>
+                 <p className="text-sm text-muted-foreground pt-1">{providerData.address || 'Address not provided'}</p>
+                 <p className="text-sm text-muted-foreground">Category: {getCategory(providerData.serviceCategory)?.name || providerData.serviceCategory}</p>
+                {(providerData.rating || providerData.reviews) && (
+                  <div className="flex items-center pt-1">
+                    <Icons.star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+                    <span className="text-sm font-medium">{providerData.rating || '?'}</span>
+                    <span className="text-sm text-muted-foreground ml-1">({providerData.reviews || 'No reviews'})</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
         </Card>
+
+        {/* Services List Section */}
+         <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
+             <CardHeader>
+                 <CardTitle className="text-2xl">Select Services</CardTitle>
+                 {error && providerData && <CardDescription className="text-destructive pt-2">{error}</CardDescription>}
+             </CardHeader>
+             <CardContent>
+                 {loadingServices ? (
+                     <ul className="space-y-4">
+                         {[...Array(3)].map((_, index) => (
+                             <li key={index} className="border p-4 rounded-md flex justify-between items-center dark:border-gray-700">
+                                 <div>
+                                     <Skeleton className="h-5 w-32 mb-2" />
+                                     <Skeleton className="h-4 w-48" />
+                                 </div>
+                                  <div className="flex items-center gap-2">
+                                      <Skeleton className="h-6 w-20" />
+                                      <Skeleton className="h-9 w-9 rounded-md" />
+                                  </div>
+                             </li>
+                         ))}
+                     </ul>
+                 ) : services.length === 0 && providerData ? ( // Show only if provider exists but has no services
+                     <p className="text-center text-muted-foreground py-8">This provider has not listed any services yet.</p>
+                 ) : (
+                     <ul className="space-y-4">
+                         {services.map((service) => {
+                             const isSelected = selectedServices.some(item => item.id === service.id);
+                             const formattedPrice = service.price ? (service.price.startsWith('₹') ? service.price : `₹${service.price}`) : 'N/A';
+                             return (
+                                 <li key={service.id} className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center dark:border-muted hover:bg-muted/50 transition-colors">
+                                     <div className="mb-3 sm:mb-0 flex-1 mr-4">
+                                         <p className="font-semibold text-lg">{service.name}</p>
+                                         <p className="text-sm text-muted-foreground">
+                                              Duration: {service.duration || 'N/A'}
+                                         </p>
+                                     </div>
+                                     <div className="flex items-center gap-4 self-end sm:self-center flex-shrink-0">
+                                         <span className="font-semibold text-md w-20 text-right">{formattedPrice}</span>
+                                         <Button
+                                           size="sm"
+                                           variant={isSelected ? "secondary" : "default"} // Changed variant logic
+                                           onClick={() => isSelected ? handleRemoveFromBooking(service.id) : handleAddToBooking(service)}
+                                           aria-label={isSelected ? `Remove ${service.name} from booking` : `Add ${service.name} to booking`}
+                                          >
+                                              {isSelected ? <MinusIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+                                              <span className="ml-1">{isSelected ? 'Added' : 'Add'}</span>
+                                          </Button>
+                                     </div>
+                                 </li>
+                             );
+                          })}
+                     </ul>
+                 )}
+             </CardContent>
+         </Card>
+         </>
       ) : null}
 
 
-       {/* Services List Section */}
-       <Card className="w-full max-w-4xl mx-auto dark:bg-card mb-6">
-           <CardHeader>
-               <CardTitle className="text-2xl">Select Services</CardTitle>
-               {error && providerData && <CardDescription className="text-destructive pt-2">{error}</CardDescription>}
-           </CardHeader>
-           <CardContent>
-               {loadingServices ? (
-                   <ul className="space-y-4">
-                       {[...Array(3)].map((_, index) => (
-                           <li key={index} className="border p-4 rounded-md flex justify-between items-center dark:border-gray-700">
-                               <div>
-                                   <Skeleton className="h-5 w-32 mb-2" />
-                                   <Skeleton className="h-4 w-48" />
-                               </div>
-                                <div className="flex items-center gap-2">
-                                    <Skeleton className="h-6 w-20" />
-                                    <Skeleton className="h-9 w-9 rounded-md" />
-                                </div>
-                           </li>
-                       ))}
-                   </ul>
-               ) : services.length === 0 && providerData ? ( // Show only if provider exists but has no services
-                   <p className="text-center text-muted-foreground py-8">This provider has not listed any services yet.</p>
-               ) : (
-                   <ul className="space-y-4">
-                       {services.map((service) => {
-                           const isSelected = selectedServices.some(item => item.id === service.id);
-                           const formattedPrice = service.price ? (service.price.startsWith('₹') ? service.price : `₹${service.price}`) : 'N/A';
-                           return (
-                               <li key={service.id} className="border p-4 rounded-md flex flex-col sm:flex-row justify-between items-start sm:items-center dark:border-muted hover:bg-muted/50 transition-colors">
-                                   <div className="mb-3 sm:mb-0">
-                                       <p className="font-semibold text-lg">{service.name}</p>
-                                       <p className="text-sm text-muted-foreground">
-                                            Duration: {service.duration || 'N/A'}
-                                       </p>
-                                   </div>
-                                   <div className="flex items-center gap-4 self-end sm:self-center">
-                                       <span className="font-semibold text-md">{formattedPrice}</span>
-                                       <Button
-                                         size="sm"
-                                         variant="outline"
-                                         onClick={() => handleAddToBooking(service)}
-                                         disabled={isSelected} // Disable if already selected
-                                         aria-label={`Add ${service.name} to booking`}
-                                         className={isSelected ? 'opacity-50 cursor-not-allowed' : ''}
-                                        >
-                                            <PlusIcon className="h-4 w-4" />
-                                            <span className="ml-1">Add</span>
-                                        </Button>
-                                   </div>
-                               </li>
-                           );
-                        })}
-                   </ul>
-               )}
-           </CardContent>
-       </Card>
-
-        {/* Booking Summary Card */}
+        {/* Booking Summary Card - Sticky */}
         {selectedServices.length > 0 && (
-            <Card className="w-full max-w-4xl mx-auto dark:bg-card mt-6 sticky bottom-[70px] z-10 shadow-lg border border-primary/20"> {/* Added sticky positioning */}
-                <CardHeader>
-                    <CardTitle className="text-xl">Booking Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {selectedServices.map((item, index) => (
-                        <React.Fragment key={item.id}>
-                            <div className="flex justify-between items-center py-2">
-                                <div>
-                                    <p className="font-medium">{item.name}</p>
-                                    <p className="text-sm text-muted-foreground">Price: ₹{parsePrice(item.price).toFixed(2)}</p>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFromBooking(item.id)}
-                                    aria-label={`Remove ${item.name} from booking`}
-                                >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                            </div>
-                            {index < selectedServices.length - 1 && <Separator className="my-1" />}
-                        </React.Fragment>
-                    ))}
-                    <Separator className="my-3 border-t-2 border-dashed" />
-                     <div className="flex justify-between items-center font-bold text-lg mt-3">
-                        <span>Total Price:</span>
-                        <span>₹{totalPrice.toFixed(2)}</span>
-                    </div>
-                </CardContent>
-                <CardFooter className="flex justify-end">
-                    <Button
-                        onClick={handleProceedToBook}
-                        disabled={totalPrice === 0 || loadingProvider || loadingServices} // Also disable if loading
-                    >
-                        Proceed to Book
-                    </Button>
-                </CardFooter>
-            </Card>
+            <div className="sticky bottom-0 left-0 right-0 w-full p-4 bg-background/90 dark:bg-card/90 backdrop-blur-sm border-t dark:border-muted z-10 mt-auto">
+             <Card className="w-full max-w-4xl mx-auto dark:bg-transparent border-none shadow-none">
+                 <CardHeader className="p-0 mb-2">
+                     <CardTitle className="text-lg">Booking Summary</CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-0 space-y-2 max-h-32 overflow-y-auto mb-3">
+                     {selectedServices.map((item, index) => (
+                         <React.Fragment key={item.id}>
+                             <div className="flex justify-between items-center text-sm">
+                                 <div className="flex items-center">
+                                     <Button
+                                         variant="ghost"
+                                         size="icon"
+                                         className="h-6 w-6 mr-2"
+                                         onClick={() => handleRemoveFromBooking(item.id)}
+                                         aria-label={`Remove ${item.name} from booking`}
+                                     >
+                                         <Trash2 className="h-4 w-4 text-destructive" />
+                                     </Button>
+                                     <p className="font-medium truncate pr-2">{item.name}</p>
+                                 </div>
+                                  <p className="text-muted-foreground flex-shrink-0">₹{parsePrice(item.price).toFixed(2)}</p>
+                             </div>
+                             {index < selectedServices.length - 1 && <Separator className="my-1 opacity-50" />}
+                         </React.Fragment>
+                     ))}
+                 </CardContent>
+                 <CardFooter className="p-0 flex justify-between items-center">
+                     <div className="font-bold text-lg">
+                         <span>Total: </span>
+                         <span>₹{totalPrice.toFixed(2)}</span>
+                     </div>
+                     <Button
+                         onClick={handleProceedToBook}
+                         disabled={totalPrice === 0 || loadingProvider || loadingServices}
+                         size="lg"
+                     >
+                         Proceed to Book
+                     </Button>
+                 </CardFooter>
+             </Card>
+            </div>
         )}
     </div>
   );
 };
 
 export default ProviderServicePage;
+
+    
