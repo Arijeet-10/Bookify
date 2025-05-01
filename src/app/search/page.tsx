@@ -122,7 +122,7 @@ const SearchPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
       {/* Header with gradient */}
-      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 py-6 shadow-md">
+      <header className="bg-[#152226] py-6 shadow-md">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex justify-center mb-8">
             <div className="flex items-center gap-2">
