@@ -51,7 +51,6 @@ const CalendarPage = () => {
       // Query for appointments in the user's subcollection with date >= now, ordered by date
       const q = query(
         userAppointmentsRef,
-        // userId filter is no longer needed as we are querying the user's specific subcollection
         where('date', '>=', nowTimestamp), // Appointment date is in the future or now
         orderBy('date', 'asc') // Order upcoming appointments chronologically
       );
@@ -65,10 +64,10 @@ const CalendarPage = () => {
         } as Appointment); // Cast to Appointment type
       });
       setAppointments(fetchedAppointments);
+
     } catch (err: any) {
       console.error('Error fetching appointments:', err);
       // Check if the error is the specific "index required" error
-      // Note: The required index might change when querying the subcollection
       if (err.code === 'failed-precondition' && err.message.includes('index')) {
            setError('Firestore query requires an index. Please create it in the Firebase Console (check the console for the exact link).');
            setShowIndexAlert(true); // Show the specific alert
@@ -84,16 +83,30 @@ const CalendarPage = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        fetchAppointments(currentUser.uid); // Fetch appointments when user logs in
+        // Fetch appointments only after user state is confirmed
+        // fetchAppointments(currentUser.uid); // Moved fetch to the effect below
       } else {
         setUser(null);
         setAppointments([]);
         setLoading(false);
         router.push('/login');
       }
+       setLoading(false); // Stop loading once auth state is determined
     });
     return () => unsubscribe();
   }, [router]); // Only depends on router
+
+  // Separate useEffect to fetch data when user is available
+  useEffect(() => {
+    if (user) {
+      fetchAppointments(user.uid);
+    } else {
+      // If user becomes null (logged out), clear appointments
+      setAppointments([]);
+      // Optionally set loading to false if not handled elsewhere
+      // setLoading(false);
+    }
+  }, [user]); // Re-run this effect when the user state changes
 
    // Format Firestore Timestamp to a readable date and time string
    const formatAppointmentDateTime = (timestamp: Timestamp): string => {
@@ -137,7 +150,7 @@ const CalendarPage = () => {
               </div>
             ) : error && !showIndexAlert ? ( // Show general error only if it's not the index error
               <p className="text-center text-destructive">{error}</p>
-            ) : appointments.length === 0 && !loading && !showIndexAlert ? ( // Add !loading check
+            ) : !loading && appointments.length === 0 && !showIndexAlert ? ( // Corrected condition
               <p className="text-center text-muted-foreground py-8">You have no upcoming appointments scheduled.</p>
             ) : (
               <ul className="space-y-4">
