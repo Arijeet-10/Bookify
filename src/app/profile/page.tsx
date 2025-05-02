@@ -177,6 +177,9 @@ const ProfilePage = () => {
            <Button onClick={() => router.push('/')} variant="outline" className="w-full mt-2">
             Back to Home
           </Button>
+           <Button onClick={() => router.push('/edit-profile')} variant="outline" className="w-full mt-2">
+            Edit Profile
+          </Button>
         </CardContent>
       </Card>
     </div>
