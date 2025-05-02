@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Define the structure of a Service Provider from Firestore
@@ -30,6 +31,10 @@ interface ServiceProvider {
   rating?: string;
   imageURL?: string;
   reviews?: string;
+  phoneNumber?: string;
+  city?: string;
+  zipCode?: string;
+  lastUpdated?: Timestamp;
 }
 
 const SearchPage = () => {
@@ -324,55 +329,79 @@ const SearchPage = () => {
                   const category = serviceCategories.find(cat => cat.id === provider.serviceCategory);
                   const aiHint = category ? `${category['data-ai-hint'] || category.name}` : 'business service';
                   const imageSrc = provider.imageURL || getPlaceholderImage(aiHint);
-
+                  const lastUpdated = provider.lastUpdated?.toDate();
+                  const distance = lastUpdated ? formatDistanceToNow(lastUpdated, { addSuffix: true }) : 'unknown';
                   return (
                     <Link href={`/provider/${provider.id}`} key={provider.id} passHref className="block">
-                      <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 dark:bg-slate-800">
-                        <div className="p-5 flex items-center gap-5">
-                          <img
-                            src={imageSrc}
-                            alt={provider.businessName}
-                            className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-                            width={96}
-                            height={96}
-                          />
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <CardTitle className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                                  {provider.businessName}
-                                </CardTitle>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{provider.fullName}</p>
+                      <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 dark:bg-slate-800 flex flex-col">
+                          {/* Image Section */}
+                          <div className="relative h-48 w-full">
+                            <img
+                              src={imageSrc}
+                              alt={provider.businessName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* Content Section */}
+                          <div className="p-4 flex-1">
+                            <div className="space-y-2">
+                              {/* Provider Name */}
+                              <CardTitle className="text-xl font-semibold text-slate-800 dark:text-slate-200">
+                                {provider.businessName}
+                              </CardTitle>
+
+                              {/* Distance */}
+                              <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                <Icons.mapPin className="w-4 h-4 text-slate-400" />
+                                <span>{distance}</span>
                               </div>
-                              {category && (
-                                <Badge className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                                  {category.name}
-                                </Badge>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400 mt-2">
-                              {provider.address && (
-                                <div className="flex items-center">
-                                  <Icons.mapPin className="w-4 h-4 mr-1 text-slate-400" />
-                                  <span>{provider.address}</span>
+
+                              {/* Phone Number */}
+                              {provider.phoneNumber && (
+                                <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 gap-1">
+                                  <Icons.phone className="w-4 h-4 text-slate-400" />
+                                  <span>{provider.phoneNumber}</span>
                                 </div>
                               )}
-                              
-                              {(provider.rating || provider.reviews) && (
-                                <div className="flex items-center">
-                                  <div className="flex items-center bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded">
-                                    <Icons.star className="w-4 h-4 mr-1 fill-current" />
-                                    <span>{provider.rating || '?'}</span>
-                                  </div>
-                                  <span className="ml-1 text-slate-500 dark:text-slate-400">
-                                    ({provider.reviews || 'No reviews'})
+
+                              {/* City and Zip Code */}
+                              {(provider.city || provider.zipCode) && (
+                                <div className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                  <Icons.home className="w-4 h-4 text-slate-400" />
+                                  <span>
+                                    {provider.city && `${provider.city}, `}
+                                    {provider.zipCode && `${provider.zipCode}`}
                                   </span>
                                 </div>
                               )}
+
+                              {/* Type of Services */}
+                              <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 gap-1">
+                                <Icons.briefcase className="w-4 h-4 text-slate-400" />
+                                <span>{category?.name || 'Service'}</span>
+                              </div>
                             </div>
+                          
+                          <div className="flex items-center mt-4">
+                            {(provider.rating || provider.reviews) && (
+                              <div className="flex items-center">
+                                <div className="flex items-center bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-0.5 rounded">
+                                  <Icons.star className="w-4 h-4 mr-1 fill-current" />
+                                  <span>{provider.rating || '?'}</span>
+                                </div>
+                                <span className="ml-1 text-slate-500 dark:text-slate-400">
+                                  ({provider.reviews || 'No reviews'})
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        </div>
+                          
+                          </div>
+                          
+                          
+                         
+                         
                       </Card>
                     </Link>
                   );
