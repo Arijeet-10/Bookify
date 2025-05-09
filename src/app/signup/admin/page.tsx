@@ -1,3 +1,4 @@
+
 'use client';
 import React, {useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -61,15 +62,15 @@ const AdminSignUpPage = () => {
        }
 
       // Store user details in Firestore 'users' collection with the 'admin' role
-      // Correctly includes the role 'admin'
       await setDoc(doc(db, "users", user.uid), {
         role: 'admin', // Hardcode role to 'admin'
         email: email,
         fullName: fullName,
+        createdAt: new Date().toISOString(),
       });
 
       // Redirect to admin dashboard after signup
-      router.push('/admin-dashboard'); // Adjust this route as needed
+      router.push('/admin-dashboard'); 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError('This email address is already in use.');
@@ -86,14 +87,14 @@ const AdminSignUpPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]"> {/* Added padding-bottom */}
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[120px]"> {/* Added padding-bottom */}
       <Card className="w-full max-w-md dark:bg-card">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">Admin Registration</CardTitle>
            <CardDescription className="text-destructive">For authorized personnel only.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="grid gap-4"> {/* Added className for gap */}
              <div className="grid gap-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input

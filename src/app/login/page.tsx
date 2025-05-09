@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -28,16 +29,18 @@ const LoginPage = () => {
       const userDocRef = doc(db, "users", user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
-      let userRole = 'user';
+      let userRole = 'user'; // Default role
 
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         userRole = userData?.role || 'user';
       } else {
+        // If user doc doesn't exist (e.g., first Google sign-in), create it
         await setDoc(userDocRef, {
-          role: 'user',
+          role: 'user', // Default to 'user' for Google sign-ins not previously registered
           email: user.email,
           fullName: user.displayName || 'User',
+          createdAt: new Date().toISOString(),
         }, { merge: true });
       }
 
@@ -60,9 +63,9 @@ const LoginPage = () => {
     if (role === "serviceProvider") {
       router.push('/service-provider-dashboard');
     } else if (role === "admin") {
-      router.push('/admin-dashboard');
+      router.push('/admin-dashboard'); // Ensure admin redirect
     } else {
-      router.push('/');
+      router.push('/'); // Default for 'user'
     }
   }
 
@@ -82,13 +85,16 @@ const LoginPage = () => {
         const userData = userDocSnap.data();
         redirectBasedOnRole(userData?.role || 'user');
       } else {
-        console.warn("User doc not found:", user.uid);
-        await setDoc(userDocRef, {
+        // This case should ideally not happen if signup creates the user document
+        // For robustness, create a default user doc and redirect to home
+        console.warn("User document not found for UID:", user.uid, "This should not happen after signup.");
+        await setDoc(userDocRef, { // Create a basic user doc if it's missing
           role: 'user',
           email: user.email,
-          fullName: user.displayName || 'User',
+          fullName: user.displayName || 'User', // Or a default name
+          createdAt: new Date().toISOString(),
         }, { merge: true });
-        router.push('/');
+        router.push('/'); // Fallback redirect
       }
     } catch (err: any) {
       if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(err.code)) {
