@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, deleteDoc 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Trash2, Flag, ArrowRight } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Trash2, Flag, ArrowRight, LineChart as LineChartIcon, BarChart3 as BarChartIcon, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,6 +26,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/hooks/use-toast';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format, parseISO } from 'date-fns';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from '@/components/ui/chart';
+
 
 interface ServiceProvider {
   id: string;
@@ -37,6 +41,20 @@ interface ServiceProvider {
   city?: string;
   zipCode?: string;
   phoneNumber?: string;
+  createdAt?: Timestamp; // Added for signup chart
+}
+
+interface Appointment {
+  id: string;
+  providerId: string;
+  providerName: string;
+  services: { id: string; name: string; price: string; duration: string }[];
+  totalPrice: number;
+  date: Timestamp; // Date of the appointment
+  userId: string;
+  userName?: string;
+  status: string; 
+  createdAt: Timestamp; // Date the booking was made
 }
 
 const AdminDashboardPage = () => {
@@ -44,9 +62,15 @@ const AdminDashboardPage = () => {
     const [user, setUser] = useState<FirebaseUser | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
+    const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
     const [loadingProviders, setLoadingProviders] = useState(true);
+    const [loadingAppointments, setLoadingAppointments] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [providerSearchTerm, setProviderSearchTerm] = useState('');
+
+    // Chart data states
+    const [providerSignupData, setProviderSignupData] = useState<{ month: string; signups: number }[]>([]);
+    const [dailyBookingData, setDailyBookingData] = useState<{ date: string; bookings: number }[]>([]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -57,10 +81,12 @@ const AdminDashboardPage = () => {
                 if (userDocSnap.exists() && userDocSnap.data()?.role === 'admin') {
                     setIsAdmin(true);
                     fetchServiceProviders();
+                    fetchAllAppointments();
                 } else {
                     setIsAdmin(false);
                     setError("Access Denied. You are not authorized to view this page.");
                     setLoadingProviders(false);
+                    setLoadingAppointments(false);
                 }
             } else {
                 router.push('/login');
@@ -73,7 +99,8 @@ const AdminDashboardPage = () => {
         setLoadingProviders(true);
         try {
             const providersCollectionRef = collection(db, 'serviceProviders');
-            const q = query(providersCollectionRef, orderBy('businessName', 'asc'));
+            // Order by createdAt if available, otherwise by businessName
+            const q = query(providersCollectionRef, orderBy('createdAt', 'desc')); 
             const querySnapshot = await getDocs(q);
             const fetchedProviders: ServiceProvider[] = [];
             querySnapshot.forEach((doc) => {
@@ -82,11 +109,81 @@ const AdminDashboardPage = () => {
             setServiceProviders(fetchedProviders);
         } catch (err) {
             console.error("Error fetching service providers:", err);
-            setError("Failed to load service providers.");
+            // If createdAt index doesn't exist, fallback to businessName ordering
+            if ((err as any).code === 'failed-precondition') {
+                 console.warn("CreatedAt index missing for serviceProviders, falling back to businessName ordering. Please create the index for optimal performance.");
+                 const fallbackQuery = query(collection(db, 'serviceProviders'), orderBy('businessName', 'asc'));
+                 const fallbackSnapshot = await getDocs(fallbackQuery);
+                 const fetchedProvidersFallback: ServiceProvider[] = [];
+                 fallbackSnapshot.forEach((doc) => {
+                    fetchedProvidersFallback.push({ id: doc.id, ...doc.data() } as ServiceProvider);
+                 });
+                 setServiceProviders(fetchedProvidersFallback);
+            } else {
+                setError("Failed to load service providers.");
+            }
         } finally {
             setLoadingProviders(false);
         }
     };
+
+    const fetchAllAppointments = async () => {
+        setLoadingAppointments(true);
+        try {
+            const appointmentsCollectionRef = collection(db, 'appointments');
+            const q = query(appointmentsCollectionRef, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            const fetchedAppointments: Appointment[] = [];
+            querySnapshot.forEach((doc) => {
+                fetchedAppointments.push({ id: doc.id, ...doc.data() } as Appointment);
+            });
+            setAllAppointments(fetchedAppointments);
+        } catch (err) {
+            console.error("Error fetching appointments:", err);
+             if ((err as any).code === 'failed-precondition') {
+                 console.warn("CreatedAt index missing for appointments. Please create the index. Charts relying on this data might not work.");
+            }
+            // Not setting global error for appointments if providers load fine. Chart will show issue.
+        } finally {
+            setLoadingAppointments(false);
+        }
+    };
+
+    // Process data for Provider Signups Chart
+    useEffect(() => {
+        if (serviceProviders.length > 0) {
+            const monthlySignups: Record<string, number> = {};
+            serviceProviders.forEach(provider => {
+                if (provider.createdAt) {
+                    const monthYear = format(provider.createdAt.toDate(), 'MMM yyyy');
+                    monthlySignups[monthYear] = (monthlySignups[monthYear] || 0) + 1;
+                }
+            });
+            const chartData = Object.entries(monthlySignups)
+                .map(([month, signups]) => ({ month, signups }))
+                .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime()); // Sort by date
+            setProviderSignupData(chartData);
+        }
+    }, [serviceProviders]);
+
+    // Process data for Daily Bookings Chart
+    useEffect(() => {
+        if (allAppointments.length > 0) {
+            const dailyBookings: Record<string, number> = {};
+            allAppointments.forEach(appointment => {
+                if (appointment.createdAt) { // using createdAt for when booking was made
+                    const dateStr = format(appointment.createdAt.toDate(), 'yyyy-MM-dd');
+                    dailyBookings[dateStr] = (dailyBookings[dateStr] || 0) + 1;
+                }
+            });
+             const chartData = Object.entries(dailyBookings)
+                .map(([date, bookings]) => ({ date, bookings }))
+                .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Sort by date
+
+            // Limit to last 30-60 days for better visualization if too much data
+            setDailyBookingData(chartData.slice(-60)); // Show last 60 days
+        }
+    }, [allAppointments]);
     
     const handleLogout = async () => {
         try {
@@ -137,7 +234,22 @@ const AdminDashboardPage = () => {
       });
     };
     
-    if (!user || (!isAdmin && !loadingProviders)) {
+    const providerSignupChartConfig = {
+      signups: {
+        label: "Signups",
+        color: "hsl(var(--chart-1))",
+      },
+    } satisfies ChartConfig;
+
+    const dailyBookingChartConfig = {
+       bookings: {
+        label: "Bookings",
+        color: "hsl(var(--chart-2))",
+      },
+    } satisfies ChartConfig;
+
+
+    if (!user || (!isAdmin && !loadingProviders && !loadingAppointments)) {
          return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[80px]">
                 <Card className="w-full max-w-md dark:bg-card text-center">
@@ -160,7 +272,7 @@ const AdminDashboardPage = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                         <div>
                             <CardTitle className="text-3xl font-bold text-slate-800 dark:text-white">Admin Dashboard</CardTitle>
-                            <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Manage service providers and bookings.</CardDescription>
+                            <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Manage service providers, bookings, and site analytics.</CardDescription>
                         </div>
                         <div className="mt-4 sm:mt-0 flex gap-2">
                              <Button variant="outline" size="sm" className="dark:text-white">
@@ -178,8 +290,11 @@ const AdminDashboardPage = () => {
                            <AlertCircle className="h-5 w-5 mr-2" /> {error}
                         </div>
                     )}
-                    <Tabs defaultValue="providers" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 md:w-[400px] bg-slate-200 dark:bg-slate-800">
+                    <Tabs defaultValue="analytics" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 md:w-auto bg-slate-200 dark:bg-slate-800">
+                            <TabsTrigger value="analytics" className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4" /> Analytics
+                            </TabsTrigger>
                             <TabsTrigger value="providers" className="flex items-center gap-2">
                                 <Users className="h-4 w-4" /> Service Providers
                             </TabsTrigger>
@@ -187,6 +302,66 @@ const AdminDashboardPage = () => {
                                 <CalendarCheck className="h-4 w-4" /> All Bookings
                             </TabsTrigger>
                         </TabsList>
+
+                        <TabsContent value="analytics" className="mt-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <Card className="dark:bg-slate-800/50">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <BarChartIcon className="h-5 w-5 text-primary"/>
+                                            Monthly Provider Signups
+                                        </CardTitle>
+                                        <CardDescription>Number of new service providers joining each month.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {loadingProviders ? (
+                                            <Skeleton className="h-[300px] w-full" />
+                                        ) : providerSignupData.length > 0 ? (
+                                            <ChartContainer config={providerSignupChartConfig} className="h-[300px] w-full">
+                                                <BarChart data={providerSignupData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                                                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
+                                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                                    <Legend />
+                                                    <Bar dataKey="signups" fill="var(--color-signups)" radius={4} />
+                                                </BarChart>
+                                            </ChartContainer>
+                                        ) : (
+                                            <p className="text-center text-slate-500 dark:text-slate-400 py-10">No provider signup data available or `createdAt` field missing.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                                <Card className="dark:bg-slate-800/50">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <LineChartIcon className="h-5 w-5 text-primary"/>
+                                            Daily Services Booked
+                                        </CardTitle>
+                                        <CardDescription>Number of services booked each day (last 60 days).</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {loadingAppointments ? (
+                                            <Skeleton className="h-[300px] w-full" />
+                                        ) : dailyBookingData.length > 0 ? (
+                                             <ChartContainer config={dailyBookingChartConfig} className="h-[300px] w-full">
+                                                <LineChart data={dailyBookingData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                    <XAxis dataKey="date" tickFormatter={(value) => format(parseISO(value), 'MMM d')} tickLine={false} axisLine={false} tickMargin={8} />
+                                                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false}/>
+                                                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                                                    <Legend />
+                                                    <Line type="monotone" dataKey="bookings" stroke="var(--color-bookings)" strokeWidth={2} dot={false} />
+                                                </LineChart>
+                                            </ChartContainer>
+                                        ) : (
+                                            <p className="text-center text-slate-500 dark:text-slate-400 py-10">No daily booking data available or `createdAt` field missing on appointments.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+
 
                         <TabsContent value="providers" className="mt-6">
                             <div className="mb-4">
@@ -300,3 +475,6 @@ const AdminDashboardPage = () => {
 };
 
 export default AdminDashboardPage;
+
+
+    

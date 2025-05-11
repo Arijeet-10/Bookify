@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,7 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore'; // Import serverTimestamp
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,6 +70,7 @@ const ServiceProviderSignUpPage = () => {
         role: 'serviceProvider',
         email: data.email,
         fullName: data.fullName,
+        createdAt: serverTimestamp(), // Add createdAt for user document as well
       });
 
       // Store detailed provider info in 'serviceProviders' collection
@@ -78,6 +80,7 @@ const ServiceProviderSignUpPage = () => {
         fullName: data.fullName,
         businessName: data.businessName,
         serviceCategory: data.serviceCategory,
+        createdAt: serverTimestamp(), // Add createdAt timestamp
       });
 
       setSuccess("Account created successfully! Redirecting...");
@@ -102,7 +105,7 @@ const ServiceProviderSignUpPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-950">
+    <div className="flex min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-950 pb-[60px]">
       {/* Left panel with image/branding for desktop */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary/10 flex-col justify-between p-12">
         <div>
@@ -320,3 +323,5 @@ const ServiceProviderSignUpPage = () => {
 };
 
 export default ServiceProviderSignUpPage;
+
+    
