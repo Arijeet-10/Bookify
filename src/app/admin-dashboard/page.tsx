@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/hooks/use-toast';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from '@/components/ui/chart';
 
@@ -41,7 +41,7 @@ interface ServiceProvider {
   city?: string;
   zipCode?: string;
   phoneNumber?: string;
-  createdAt?: Timestamp; // Added for signup chart
+  // createdAt?: Timestamp; // Removed createdAt
 }
 
 interface AppointmentService {
@@ -75,7 +75,6 @@ const AdminDashboardPage = () => {
     const [providerSearchTerm, setProviderSearchTerm] = useState('');
 
     // Chart data states
-    const [providerSignupData, setProviderSignupData] = useState<{ month: string; signups: number }[]>([]);
     const [dailyBookingData, setDailyBookingData] = useState<{ date: string; bookings: number }[]>([]);
 
     useEffect(() => {
@@ -103,10 +102,10 @@ const AdminDashboardPage = () => {
 
     const fetchServiceProviders = async () => {
         setLoadingProviders(true);
+        setError(null);
         try {
             const providersCollectionRef = collection(db, 'serviceProviders');
-            // Order by createdAt if available, otherwise by businessName
-            const q = query(providersCollectionRef, orderBy('createdAt', 'desc')); 
+            const q = query(providersCollectionRef, orderBy('businessName', 'asc')); 
             const querySnapshot = await getDocs(q);
             const fetchedProviders: ServiceProvider[] = [];
             querySnapshot.forEach((doc) => {
@@ -115,19 +114,7 @@ const AdminDashboardPage = () => {
             setServiceProviders(fetchedProviders);
         } catch (err) {
             console.error("Error fetching service providers:", err);
-            // If createdAt index doesn't exist, fallback to businessName ordering
-            if ((err as any).code === 'failed-precondition') {
-                 console.warn("CreatedAt index missing for serviceProviders, falling back to businessName ordering. Please create the index for optimal performance.");
-                 const fallbackQuery = query(collection(db, 'serviceProviders'), orderBy('businessName', 'asc'));
-                 const fallbackSnapshot = await getDocs(fallbackQuery);
-                 const fetchedProvidersFallback: ServiceProvider[] = [];
-                 fallbackSnapshot.forEach((doc) => {
-                    fetchedProvidersFallback.push({ id: doc.id, ...doc.data() } as ServiceProvider);
-                 });
-                 setServiceProviders(fetchedProvidersFallback);
-            } else {
-                setError("Failed to load service providers.");
-            }
+            setError("Failed to load service providers.");
         } finally {
             setLoadingProviders(false);
         }
@@ -161,23 +148,6 @@ const AdminDashboardPage = () => {
         }
         return 'N/A';
     };
-
-    // Process data for Provider Signups Chart
-    useEffect(() => {
-        if (serviceProviders.length > 0) {
-            const monthlySignups: Record<string, number> = {};
-            serviceProviders.forEach(provider => {
-                if (provider.createdAt) {
-                    const monthYear = format(provider.createdAt.toDate(), 'MMM yyyy');
-                    monthlySignups[monthYear] = (monthlySignups[monthYear] || 0) + 1;
-                }
-            });
-            const chartData = Object.entries(monthlySignups)
-                .map(([month, signups]) => ({ month, signups }))
-                .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime()); // Sort by date
-            setProviderSignupData(chartData);
-        }
-    }, [serviceProviders]);
 
     // Process data for Daily Bookings Chart
     useEffect(() => {
@@ -247,13 +217,6 @@ const AdminDashboardPage = () => {
       });
     };
     
-    const providerSignupChartConfig = {
-      signups: {
-        label: "Signups",
-        color: "hsl(var(--chart-1))",
-      },
-    } satisfies ChartConfig;
-
     const dailyBookingChartConfig = {
        bookings: {
         label: "Bookings",
@@ -317,34 +280,7 @@ const AdminDashboardPage = () => {
                         </TabsList>
 
                         <TabsContent value="analytics" className="mt-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <Card className="dark:bg-slate-800/50">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <BarChartIcon className="h-5 w-5 text-primary"/>
-                                            Monthly Provider Signups
-                                        </CardTitle>
-                                        <CardDescription>Number of new service providers joining each month.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {loadingProviders ? (
-                                            <Skeleton className="h-[300px] w-full" />
-                                        ) : providerSignupData.length > 0 ? (
-                                            <ChartContainer config={providerSignupChartConfig} className="h-[300px] w-full">
-                                                <BarChart data={providerSignupData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                                                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
-                                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                                    <Legend />
-                                                    <Bar dataKey="signups" fill="var(--color-signups)" radius={4} />
-                                                </BarChart>
-                                            </ChartContainer>
-                                        ) : (
-                                            <p className="text-center text-slate-500 dark:text-slate-400 py-10">No provider signup data available or `createdAt` field missing.</p>
-                                        )}
-                                    </CardContent>
-                                </Card>
+                            <div className="grid grid-cols-1 gap-6">
                                 <Card className="dark:bg-slate-800/50">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
@@ -547,3 +483,4 @@ export default AdminDashboardPage;
     
 
       
+
