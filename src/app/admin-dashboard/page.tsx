@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ServiceProvider {
   id: string;
@@ -43,7 +45,7 @@ interface Appointment {
   date: Timestamp;
   userId: string;
   userName?: string;
-  status: string;
+  status: string; // e.g., 'confirmed', 'pending', 'cancelled'
   createdAt: Timestamp;
 }
 
@@ -59,12 +61,12 @@ const AdminDashboardPage = () => {
 
     const [providerSearchTerm, setProviderSearchTerm] = useState('');
     const [bookingSearchTerm, setBookingSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                // Verify admin role
                 const userDocRef = doc(db, 'users', currentUser.uid);
                 const userDocSnap = await getDoc(userDocRef);
                 if (userDocSnap.exists() && userDocSnap.data()?.role === 'admin') {
@@ -76,8 +78,6 @@ const AdminDashboardPage = () => {
                     setError("Access Denied. You are not authorized to view this page.");
                     setLoadingProviders(false);
                     setLoadingAppointments(false);
-                    // Optionally redirect non-admins
-                    // router.push('/'); 
                 }
             } else {
                 router.push('/login');
@@ -118,7 +118,7 @@ const AdminDashboardPage = () => {
             setAppointments(fetchedAppointments);
         } catch (err) {
             console.error("Error fetching appointments:", err);
-            setError(error + (error ? "\n" : "") + "Failed to load appointments.");
+            setError(prevError => (prevError ? prevError + "\n" : "") + "Failed to load appointments.");
         } finally {
             setLoadingAppointments(false);
         }
@@ -140,11 +140,20 @@ const AdminDashboardPage = () => {
         provider.email.toLowerCase().includes(providerSearchTerm.toLowerCase())
     );
 
-    const filteredAppointments = appointments.filter(appointment =>
-        appointment.providerName.toLowerCase().includes(bookingSearchTerm.toLowerCase()) ||
-        (appointment.userName && appointment.userName.toLowerCase().includes(bookingSearchTerm.toLowerCase())) ||
-        appointment.services.some(s => s.name.toLowerCase().includes(bookingSearchTerm.toLowerCase()))
-    );
+    const filteredAppointments = appointments.filter(appointment => {
+        const searchTermLower = bookingSearchTerm.toLowerCase();
+        const statusLower = typeof statusFilter === 'string' ? statusFilter.toLowerCase() : 'all';
+
+        const matchesSearch = bookingSearchTerm === '' ||
+            appointment.providerName.toLowerCase().includes(searchTermLower) ||
+            (appointment.userName && appointment.userName.toLowerCase().includes(searchTermLower)) ||
+            appointment.services.some(s => s.name.toLowerCase().includes(searchTermLower));
+
+        const matchesStatus = statusFilter === 'all' ||
+            appointment.status.toLowerCase() === statusLower;
+
+        return matchesSearch && matchesStatus;
+    });
     
     const getServicesList = (services: AppointmentService[]): string => {
         if (Array.isArray(services) && services.length > 0) {
@@ -153,7 +162,7 @@ const AdminDashboardPage = () => {
         return 'N/A';
       };
 
-    if (!user || !isAdmin && !loadingAppointments && !loadingProviders) {
+    if (!user || (!isAdmin && !loadingAppointments && !loadingProviders)) {
          return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]">
                 <Card className="w-full max-w-md dark:bg-card text-center">
@@ -168,7 +177,6 @@ const AdminDashboardPage = () => {
             </div>
         );
     }
-
 
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-gray-950 p-4 md:p-8 pb-[80px]">
@@ -190,7 +198,7 @@ const AdminDashboardPage = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                    {error && (
+                    {error && !error.startsWith("Access Denied") && ( // Only show general errors here
                         <div className="mb-4 p-3 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-md flex items-center">
                            <AlertCircle className="h-5 w-5 mr-2" /> {error}
                         </div>
@@ -265,17 +273,31 @@ const AdminDashboardPage = () => {
                         </TabsContent>
 
                         <TabsContent value="bookings" className="mt-6">
-                             <div className="mb-4">
-                                <div className="relative">
+                            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                                {/* Search Input */}
+                                <div className="relative flex-grow md:flex-grow-0">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
                                     <Input
                                         type="search"
-                                        placeholder="Search bookings by provider, customer or service..."
+                                        placeholder="Search by provider, customer, service..."
                                         className="pl-8 w-full md:w-[300px] dark:bg-slate-800 dark:border-slate-700"
                                         value={bookingSearchTerm}
                                         onChange={(e) => setBookingSearchTerm(e.target.value)}
                                     />
                                 </div>
+                                {/* Status Filter Dropdown */}
+                                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as string | 'all')}>
+                                    <SelectTrigger className="w-full md:w-[200px] dark:bg-slate-800 dark:border-slate-700">
+                                        <Filter className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                        <SelectValue placeholder="Filter by status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                                        <SelectItem value="pending">Pending</SelectItem>
+                                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             {loadingAppointments ? (
                                  <div className="space-y-2">
@@ -302,17 +324,28 @@ const AdminDashboardPage = () => {
                                                     <TableCell className="text-slate-600 dark:text-slate-300 text-xs max-w-xs truncate">{getServicesList(appt.services)}</TableCell>
                                                     <TableCell className="text-slate-600 dark:text-slate-300">{format(appt.date.toDate(), 'PPp')}</TableCell>
                                                     <TableCell className="text-slate-600 dark:text-slate-300">₹{appt.totalPrice.toFixed(2)}</TableCell>
-                                                    <TableCell><Badge variant={appt.status === 'confirmed' ? 'default' : appt.status === 'cancelled' ? 'destructive' : 'secondary'} className={
-                                                        appt.status === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                                                        : appt.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                                    }>{appt.status}</Badge></TableCell>
+                                                    <TableCell>
+                                                        <Badge 
+                                                            variant={
+                                                                appt.status.toLowerCase() === 'confirmed' ? 'default' 
+                                                                : appt.status.toLowerCase() === 'cancelled' ? 'destructive' 
+                                                                : 'secondary'
+                                                            } 
+                                                            className={
+                                                                appt.status.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
+                                                                : appt.status.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' // For 'pending' or other statuses
+                                                            }
+                                                        >
+                                                            {appt.status}
+                                                        </Badge>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                              {filteredAppointments.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={6} className="text-center text-slate-500 dark:text-slate-400 py-8">
-                                                        No bookings found.
+                                                        No bookings found matching your criteria.
                                                     </TableCell>
                                                 </TableRow>
                                             )}
