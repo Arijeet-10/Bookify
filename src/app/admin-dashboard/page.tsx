@@ -7,15 +7,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useRouter } from 'next/navigation';
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Filter } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Filter, Trash2, Flag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from '@/hooks/use-toast';
 
 interface ServiceProvider {
   id: string;
@@ -131,6 +143,7 @@ const AdminDashboardPage = () => {
         } catch (err) {
             console.error("Logout Error:", err);
             setError("Logout failed. Please try again.");
+            toast({ title: "Logout Failed", description: "Please try again.", variant: "destructive"});
         }
     };
 
@@ -160,7 +173,75 @@ const AdminDashboardPage = () => {
           return services.map(service => service.name).join(', ');
         }
         return 'N/A';
-      };
+    };
+
+    const handleRemoveProvider = async (providerId: string, providerName: string) => {
+      try {
+        await deleteDoc(doc(db, 'serviceProviders', providerId));
+        // Also attempt to delete from 'users' collection if a corresponding entry exists
+        // This assumes providerId is the same as userId in 'users' collection for service providers
+        const userDocRef = doc(db, 'users', providerId);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists() && userDocSnap.data()?.role === 'serviceProvider') {
+            await deleteDoc(userDocRef);
+        }
+
+        setServiceProviders(prev => prev.filter(p => p.id !== providerId));
+        toast({
+          title: "Provider Removed",
+          description: `${providerName} has been removed successfully.`,
+        });
+      } catch (error) {
+        console.error("Error removing provider:", error);
+        toast({
+          title: "Error",
+          description: `Failed to remove ${providerName}. Please try again.`,
+          variant: "destructive",
+        });
+      }
+    };
+
+    const handleReportProvider = (providerId: string, providerName: string) => {
+      // Placeholder for reporting functionality
+      console.log(`Reporting provider: ${providerName} (ID: ${providerId})`);
+      toast({
+        title: "Provider Reported",
+        description: `${providerName} has been reported. This is a placeholder action.`,
+      });
+    };
+    
+    const handleRemoveAppointment = async (appointmentId: string, userId: string) => {
+        try {
+            // Delete from main 'appointments' collection
+            await deleteDoc(doc(db, 'appointments', appointmentId));
+            // Delete from user's subcollection
+            const userAppointmentDocRef = doc(db, 'users', userId, 'appointments', appointmentId);
+            await deleteDoc(userAppointmentDocRef);
+
+            setAppointments(prev => prev.filter(appt => appt.id !== appointmentId));
+            toast({
+                title: "Appointment Removed",
+                description: `Appointment has been removed successfully.`,
+            });
+        } catch (error) {
+            console.error("Error removing appointment:", error);
+            toast({
+                title: "Error",
+                description: `Failed to remove appointment. Please try again.`,
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleReportAppointment = (appointmentId: string) => {
+        // Placeholder for reporting functionality
+        console.log(`Reporting appointment ID: ${appointmentId}`);
+        toast({
+            title: "Appointment Reported",
+            description: `Appointment has been reported. This is a placeholder action.`,
+        });
+    };
+
 
     if (!user || (!isAdmin && !loadingAppointments && !loadingProviders)) {
          return (
@@ -198,7 +279,7 @@ const AdminDashboardPage = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                    {error && !error.startsWith("Access Denied") && ( // Only show general errors here
+                    {error && !error.startsWith("Access Denied") && (
                         <div className="mb-4 p-3 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-md flex items-center">
                            <AlertCircle className="h-5 w-5 mr-2" /> {error}
                         </div>
@@ -240,16 +321,19 @@ const AdminDashboardPage = () => {
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Email</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Category</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Phone</TableHead>
+                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {filteredProviders.map((provider) => (
                                                 <TableRow 
                                                     key={provider.id} 
-                                                    className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer group"
-                                                    onClick={() => router.push(`/admin-dashboard/provider-services/${provider.id}`)}
+                                                    className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 group"
                                                 >
-                                                    <TableCell className="font-medium text-slate-800 dark:text-slate-200 flex items-center">
+                                                    <TableCell 
+                                                        className="font-medium text-slate-800 dark:text-slate-200 flex items-center cursor-pointer"
+                                                        onClick={() => router.push(`/admin-dashboard/provider-services/${provider.id}`)}
+                                                    >
                                                         {provider.businessName}
                                                         <Eye className="ml-2 h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
                                                     </TableCell>
@@ -257,11 +341,37 @@ const AdminDashboardPage = () => {
                                                     <TableCell className="text-slate-600 dark:text-slate-300">{provider.email}</TableCell>
                                                     <TableCell><Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{provider.serviceCategory}</Badge></TableCell>
                                                     <TableCell className="text-slate-600 dark:text-slate-300">{provider.phoneNumber || 'N/A'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This action cannot be undone. This will permanently remove the service provider "{provider.businessName}" and their data.
+                                                                </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleRemoveProvider(provider.id, provider.businessName)} className="bg-destructive hover:bg-destructive/90">
+                                                                    Yes, remove provider
+                                                                </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                        <Button variant="ghost" size="icon" className="text-yellow-600 hover:text-yellow-500 dark:text-yellow-400 dark:hover:text-yellow-300" onClick={() => handleReportProvider(provider.id, provider.businessName)}>
+                                                            <Flag className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                             {filteredProviders.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={5} className="text-center text-slate-500 dark:text-slate-400 py-8">
+                                                    <TableCell colSpan={6} className="text-center text-slate-500 dark:text-slate-400 py-8">
                                                         No service providers found.
                                                     </TableCell>
                                                 </TableRow>
@@ -274,7 +384,6 @@ const AdminDashboardPage = () => {
 
                         <TabsContent value="bookings" className="mt-6">
                             <div className="flex flex-col md:flex-row gap-4 mb-6">
-                                {/* Search Input */}
                                 <div className="relative flex-grow md:flex-grow-0">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
                                     <Input
@@ -285,7 +394,6 @@ const AdminDashboardPage = () => {
                                         onChange={(e) => setBookingSearchTerm(e.target.value)}
                                     />
                                 </div>
-                                {/* Status Filter Dropdown */}
                                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as string | 'all')}>
                                     <SelectTrigger className="w-full md:w-[200px] dark:bg-slate-800 dark:border-slate-700">
                                         <Filter className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -314,6 +422,7 @@ const AdminDashboardPage = () => {
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Date &amp; Time</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Total</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Status</TableHead>
+                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -334,17 +443,43 @@ const AdminDashboardPage = () => {
                                                             className={
                                                                 appt.status.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
                                                                 : appt.status.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' // For 'pending' or other statuses
+                                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
                                                             }
                                                         >
                                                             {appt.status}
                                                         </Badge>
                                                     </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This action cannot be undone. This will permanently remove this booking.
+                                                                </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleRemoveAppointment(appt.id, appt.userId)} className="bg-destructive hover:bg-destructive/90">
+                                                                    Yes, remove booking
+                                                                </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                        <Button variant="ghost" size="icon" className="text-yellow-600 hover:text-yellow-500 dark:text-yellow-400 dark:hover:text-yellow-300" onClick={() => handleReportAppointment(appt.id)}>
+                                                            <Flag className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                              {filteredAppointments.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="text-center text-slate-500 dark:text-slate-400 py-8">
+                                                    <TableCell colSpan={7} className="text-center text-slate-500 dark:text-slate-400 py-8">
                                                         No bookings found matching your criteria.
                                                     </TableCell>
                                                 </TableRow>
