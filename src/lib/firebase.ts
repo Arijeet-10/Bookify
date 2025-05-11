@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
@@ -22,3 +22,26 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 export const googleProvider = new GoogleAuthProvider();
+
+import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+
+export const fetchBookingsByProviderAndDate = async (providerId: string, date: Date) => {
+  try {
+    // Create start and end timestamps for the selected date
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+    const bookingsRef = collection(db, "appointments");
+    const q = query(
+      bookingsRef,
+      where("providerId", "==", providerId),
+      where("date", ">=", Timestamp.fromDate(startOfDay)),
+      where("date", "<=", Timestamp.fromDate(endOfDay))
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    throw error; // Rethrow the error for handling in the component
+  }
+};

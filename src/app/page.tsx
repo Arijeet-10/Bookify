@@ -38,6 +38,14 @@ const Home = () => {
     setIsBookingOpen(false);
   };
 
+  const handleProviderClick = (providerId: string) => {
+    router.push(`/provider/${providerId}`);
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+ router.push(`/search?category=${categoryId}`);
+  };
+
   const handleAISuggestion = async () => {
     if (!providerPreferences) {
       toast({
@@ -91,8 +99,9 @@ const Home = () => {
             {serviceCategories.map(category => (
               <div key={category.id} className="flex-shrink-0">
                 <Card
-                  className="w-32 h-32 flex flex-col items-center justify-center p-2 hover:shadow-md transition-shadow duration-300 bg-transparent border-none"
+                  className="w-32 h-32 flex flex-col items-center justify-center p-2 hover:shadow-md transition-shadow duration-300 bg-transparent border-none cursor-pointer"
                   data-ai-hint={category['data-ai-hint']}
+ onClick={() => handleCategoryClick(category.id)}
                 >
                   <Avatar className="mb-2 w-20 h-20">
                     <AvatarImage
@@ -125,7 +134,11 @@ const Home = () => {
           <div className="flex overflow-x-auto space-x-4 pb-8">
             {specialOffers.map(offer => (
               <div key={offer.id} className="flex-shrink-0 w-64">
-                <Card className="overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800" data-ai-hint={offer['data-ai-hint']}>
+                <Card 
+                  className="overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 cursor-pointer" 
+                  data-ai-hint={offer['data-ai-hint']}
+                  onClick={() => handleProviderClick(offer.id)} // Assuming offer.id is the providerId
+                >
                   <div className="relative">
                     <img
                       src={offer.imageUrl}

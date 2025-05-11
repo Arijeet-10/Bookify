@@ -5,7 +5,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, getDoc, Timestamp, collection, addDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, fetchBookingsByProviderAndDate } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,13 @@ interface SelectedService {
   name: string;
   price: string;
   duration: string;
+}
+
+interface Booking {
+  id: string;
+  date: Timestamp;
+  selectedTime: string;
+  // Add other relevant booking details if needed
 }
 
 // Define available time slots
@@ -61,6 +68,7 @@ const BookingConfirmationPageContent = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>("pay_at_venue");
 
 
@@ -117,6 +125,22 @@ const BookingConfirmationPageContent = () => {
     initializeBooking();
   }, [providerId, servicesParam, totalParam]);
 
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (selectedDate && providerId) {
+        try {
+          const bookings = await fetchBookingsByProviderAndDate(providerId, selectedDate);
+          const times = bookings.map(booking => booking.selectedTime);
+          setBookedSlots(times);
+        } catch (err) {
+          console.error("Error fetching booked slots:", err);
+        }
+      }
+    };
+
+    fetchBookings();
+  }, [selectedDate, providerId]);
+
   const handleConfirmBooking = async () => {
     if (!user) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
@@ -169,6 +193,7 @@ const BookingConfirmationPageContent = () => {
         date: appointmentTimestamp,
         status: 'confirmed', // Or 'pending_payment' if online payment is initiated
         paymentMethod: paymentMethod, // Store the chosen payment method
+        selectedTime: selectedTime, // Store the selected time string
         createdAt: Timestamp.now(),
       };
 
@@ -352,9 +377,15 @@ const BookingConfirmationPageContent = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
+                        <SelectItem
+                          key={time}
+                          value={time}
+                          disabled={bookedSlots.includes(time)}
+                          className={bookedSlots.includes(time) ? 'text-slate-400 dark:text-slate-600 italic' : ''}
+                        >
+                          {time} {bookedSlots.includes(time) && '(Booked)'}
                         </SelectItem>
+
                       ))}
                     </SelectContent>
                   </Select>

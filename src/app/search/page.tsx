@@ -13,7 +13,7 @@ import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore
 import { db } from '@/lib/firebase';
 import { serviceCategories } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link';
+import Link from 'next/link'
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -40,7 +40,7 @@ interface ServiceProvider {
 const SearchPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [whereQuery, setWhereQuery] = useState('');
-  const [whenDate, setWhenDate] = useState<Date | undefined>(new Date());
+  const [whenDate, setWhenDate] = useState<Date | undefined>(undefined);
   const [isDateOpen, setIsDateOpen] = useState(false);
 
   const [sortBy, setSortBy] = useState('Relevance');
@@ -49,9 +49,18 @@ const SearchPage = () => {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const router = useRouter()
 
   // Fetch all service providers from Firestore on component mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const categoryId = searchParams.get('category');
+    if (categoryId && serviceCategories.some(cat => cat.id === categoryId)) {
+      console.log(`Applying filter for category: ${categoryId}`); // Log to confirm filter is applied
+      setFilters([categoryId]);
+    }
+
+  }, []); // Empty dependency array means this effect runs once on mount
   useEffect(() => {
     const fetchProviders = async () => {
       setLoading(true);
@@ -74,9 +83,9 @@ const SearchPage = () => {
     };
 
     fetchProviders();
-  }, []);
+  }, [router.query]);
 
-  // Filter providers based on search query and selected categories
+ // Filter providers based on search query and selected categories
   const filteredProviders = useMemo(() => {
     let tempProviders = providers;
 
