@@ -11,11 +11,9 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, deleteDoc 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Filter, Trash2, Flag } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Trash2, Flag, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,39 +39,14 @@ interface ServiceProvider {
   phoneNumber?: string;
 }
 
-interface AppointmentService {
-  id: string;
-  name: string;
-  price: string;
-  duration: string;
-}
-
-interface Appointment {
-  id: string;
-  providerId: string;
-  providerName: string;
-  services: AppointmentService[];
-  totalPrice: number;
-  date: Timestamp;
-  userId: string;
-  userName?: string;
-  status: string; // e.g., 'confirmed', 'pending', 'cancelled'
-  createdAt: Timestamp;
-}
-
 const AdminDashboardPage = () => {
     const router = useRouter();
     const [user, setUser] = useState<FirebaseUser | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loadingProviders, setLoadingProviders] = useState(true);
-    const [loadingAppointments, setLoadingAppointments] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
     const [providerSearchTerm, setProviderSearchTerm] = useState('');
-    const [bookingSearchTerm, setBookingSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -84,12 +57,10 @@ const AdminDashboardPage = () => {
                 if (userDocSnap.exists() && userDocSnap.data()?.role === 'admin') {
                     setIsAdmin(true);
                     fetchServiceProviders();
-                    fetchAppointments();
                 } else {
                     setIsAdmin(false);
                     setError("Access Denied. You are not authorized to view this page.");
                     setLoadingProviders(false);
-                    setLoadingAppointments(false);
                 }
             } else {
                 router.push('/login');
@@ -116,26 +87,7 @@ const AdminDashboardPage = () => {
             setLoadingProviders(false);
         }
     };
-
-    const fetchAppointments = async () => {
-        setLoadingAppointments(true);
-        try {
-            const appointmentsCollectionRef = collection(db, 'appointments');
-            const q = query(appointmentsCollectionRef, orderBy('date', 'desc'));
-            const querySnapshot = await getDocs(q);
-            const fetchedAppointments: Appointment[] = [];
-            querySnapshot.forEach((doc) => {
-                fetchedAppointments.push({ id: doc.id, ...doc.data() } as Appointment);
-            });
-            setAppointments(fetchedAppointments);
-        } catch (err) {
-            console.error("Error fetching appointments:", err);
-            setError(prevError => (prevError ? prevError + "\n" : "") + "Failed to load appointments.");
-        } finally {
-            setLoadingAppointments(false);
-        }
-    };
-
+    
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -153,33 +105,9 @@ const AdminDashboardPage = () => {
         provider.email.toLowerCase().includes(providerSearchTerm.toLowerCase())
     );
 
-    const filteredAppointments = appointments.filter(appointment => {
-        const searchTermLower = bookingSearchTerm.toLowerCase();
-        const statusLower = typeof statusFilter === 'string' ? statusFilter.toLowerCase() : 'all';
-
-        const matchesSearch = bookingSearchTerm === '' ||
-            appointment.providerName.toLowerCase().includes(searchTermLower) ||
-            (appointment.userName && appointment.userName.toLowerCase().includes(searchTermLower)) ||
-            appointment.services.some(s => s.name.toLowerCase().includes(searchTermLower));
-
-        const matchesStatus = statusFilter === 'all' ||
-            appointment.status.toLowerCase() === statusLower;
-
-        return matchesSearch && matchesStatus;
-    });
-    
-    const getServicesList = (services: AppointmentService[]): string => {
-        if (Array.isArray(services) && services.length > 0) {
-          return services.map(service => service.name).join(', ');
-        }
-        return 'N/A';
-    };
-
     const handleRemoveProvider = async (providerId: string, providerName: string) => {
       try {
         await deleteDoc(doc(db, 'serviceProviders', providerId));
-        // Also attempt to delete from 'users' collection if a corresponding entry exists
-        // This assumes providerId is the same as userId in 'users' collection for service providers
         const userDocRef = doc(db, 'users', providerId);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists() && userDocSnap.data()?.role === 'serviceProvider') {
@@ -202,7 +130,6 @@ const AdminDashboardPage = () => {
     };
 
     const handleReportProvider = (providerId: string, providerName: string) => {
-      // Placeholder for reporting functionality
       console.log(`Reporting provider: ${providerName} (ID: ${providerId})`);
       toast({
         title: "Provider Reported",
@@ -210,42 +137,9 @@ const AdminDashboardPage = () => {
       });
     };
     
-    const handleRemoveAppointment = async (appointmentId: string, userId: string) => {
-        try {
-            // Delete from main 'appointments' collection
-            await deleteDoc(doc(db, 'appointments', appointmentId));
-            // Delete from user's subcollection
-            const userAppointmentDocRef = doc(db, 'users', userId, 'appointments', appointmentId);
-            await deleteDoc(userAppointmentDocRef);
-
-            setAppointments(prev => prev.filter(appt => appt.id !== appointmentId));
-            toast({
-                title: "Appointment Removed",
-                description: `Appointment has been removed successfully.`,
-            });
-        } catch (error) {
-            console.error("Error removing appointment:", error);
-            toast({
-                title: "Error",
-                description: `Failed to remove appointment. Please try again.`,
-                variant: "destructive",
-            });
-        }
-    };
-
-    const handleReportAppointment = (appointmentId: string) => {
-        // Placeholder for reporting functionality
-        console.log(`Reporting appointment ID: ${appointmentId}`);
-        toast({
-            title: "Appointment Reported",
-            description: `Appointment has been reported. This is a placeholder action.`,
-        });
-    };
-
-
-    if (!user || (!isAdmin && !loadingAppointments && !loadingProviders)) {
+    if (!user || (!isAdmin && !loadingProviders)) {
          return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[60px]">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-background p-4 pb-[80px]">
                 <Card className="w-full max-w-md dark:bg-card text-center">
                     <CardHeader>
                         <CardTitle className="text-2xl text-destructive">Access Denied</CardTitle>
@@ -383,111 +277,20 @@ const AdminDashboardPage = () => {
                         </TabsContent>
 
                         <TabsContent value="bookings" className="mt-6">
-                            <div className="flex flex-col md:flex-row gap-4 mb-6">
-                                <div className="relative flex-grow md:flex-grow-0">
-                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                                    <Input
-                                        type="search"
-                                        placeholder="Search by provider, customer, service..."
-                                        className="pl-8 w-full md:w-[300px] dark:bg-slate-800 dark:border-slate-700"
-                                        value={bookingSearchTerm}
-                                        onChange={(e) => setBookingSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as string | 'all')}>
-                                    <SelectTrigger className="w-full md:w-[200px] dark:bg-slate-800 dark:border-slate-700">
-                                        <Filter className="mr-2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                                        <SelectValue placeholder="Filter by status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {loadingAppointments ? (
-                                 <div className="space-y-2">
-                                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-md bg-slate-200 dark:bg-slate-800" />)}
-                                </div>
-                            ) : (
-                                <div className="overflow-auto border border-slate-200 dark:border-slate-800 rounded-lg">
-                                    <Table>
-                                        <TableHeader className="bg-slate-100 dark:bg-slate-800/70">
-                                            <TableRow>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Customer</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Provider</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Services</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Date &amp; Time</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Total</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Status</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredAppointments.map((appt) => (
-                                                <TableRow key={appt.id} className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                                                    <TableCell className="text-slate-600 dark:text-slate-300">{appt.userName || 'N/A'}</TableCell>
-                                                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">{appt.providerName}</TableCell>
-                                                    <TableCell className="text-slate-600 dark:text-slate-300 text-xs max-w-xs truncate">{getServicesList(appt.services)}</TableCell>
-                                                    <TableCell className="text-slate-600 dark:text-slate-300">{format(appt.date.toDate(), 'PPp')}</TableCell>
-                                                    <TableCell className="text-slate-600 dark:text-slate-300">₹{appt.totalPrice.toFixed(2)}</TableCell>
-                                                    <TableCell>
-                                                        <Badge 
-                                                            variant={
-                                                                appt.status.toLowerCase() === 'confirmed' ? 'default' 
-                                                                : appt.status.toLowerCase() === 'cancelled' ? 'destructive' 
-                                                                : 'secondary'
-                                                            } 
-                                                            className={
-                                                                appt.status.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
-                                                                : appt.status.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                                            }
-                                                        >
-                                                            {appt.status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    This action cannot be undone. This will permanently remove this booking.
-                                                                </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleRemoveAppointment(appt.id, appt.userId)} className="bg-destructive hover:bg-destructive/90">
-                                                                    Yes, remove booking
-                                                                </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                        <Button variant="ghost" size="icon" className="text-yellow-600 hover:text-yellow-500 dark:text-yellow-400 dark:hover:text-yellow-300" onClick={() => handleReportAppointment(appt.id)}>
-                                                            <Flag className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                             {filteredAppointments.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={7} className="text-center text-slate-500 dark:text-slate-400 py-8">
-                                                        No bookings found matching your criteria.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
+                           <Card className="dark:bg-slate-800/50">
+                                <CardHeader>
+                                    <CardTitle>View All Bookings</CardTitle>
+                                    <CardDescription>All customer bookings are managed on a dedicated page.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-slate-600 dark:text-slate-300 mb-4">
+                                        Click the button below to navigate to the bookings management page where you can search, filter, and manage all appointments.
+                                    </p>
+                                    <Button onClick={() => router.push('/admin-dashboard/bookings')}>
+                                        Go to All Bookings <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </CardContent>
+                           </Card>
                         </TabsContent>
                     </Tabs>
                 </CardContent>

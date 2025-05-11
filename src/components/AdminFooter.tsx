@@ -13,11 +13,9 @@ const AdminFooter = () => {
 
   const navItems = [
     { href: '/admin-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
-    { href: '/admin-dashboard/providers', label: 'Providers', icon: Icons.users }, // Updated to link to the new providers page
-    { href: '/admin-dashboard#bookings', label: 'Bookings', icon: Icons.calendarCheck }, // Link to bookings tab in main dashboard
+    { href: '/admin-dashboard/providers', label: 'Providers', icon: Icons.users }, 
+    { href: '/admin-dashboard/bookings', label: 'Bookings', icon: Icons.calendarCheck }, // Updated link
     { href: '/profile', label: 'Profile', icon: Icons.user },
-    // Placeholder for settings, can be linked to a future admin settings page
-    // { href: '/admin-settings', label: 'Settings', icon: Icons.settings },
   ];
 
   return (
@@ -29,12 +27,7 @@ const AdminFooter = () => {
     >
       <ul className="flex justify-around items-center">
         {navItems.map((item) => {
-          // For tab-based navigation within the dashboard, we check if the pathname starts with /admin-dashboard
-          // and if the item.href includes a hash that matches a tab.
-           const isActive = item.href.includes('#')
-            ? pathname === '/admin-dashboard' && window.location.hash === item.href.substring(item.href.indexOf('#'))
-            : pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin-dashboard' && item.href !== '/profile');
-
+           const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin-dashboard' && item.href !== '/profile');
 
           return (
             <li key={item.href} className="flex flex-col items-center">
@@ -76,12 +69,12 @@ const AdminFooter = () => {
 
                 <motion.span
                   className={cn(
-                    'text-xs transition-colors text-center', // Added text-center for better label display
+                    'text-xs transition-colors text-center', 
                     isActive 
                       ? 'text-white dark:text-accent' 
                       : 'text-gray-400 dark:text-gray-500'
                   )}
-                  style={{maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}} // Prevent long labels from breaking layout
+                  style={{maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 >
                   {item.label}
                 </motion.span>
