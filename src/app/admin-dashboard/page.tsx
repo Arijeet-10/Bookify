@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
@@ -237,8 +236,15 @@ const AdminDashboardPage = () => {
                                         </TableHeader>
                                         <TableBody>
                                             {filteredProviders.map((provider) => (
-                                                <TableRow key={provider.id} className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                                                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">{provider.businessName}</TableCell>
+                                                <TableRow 
+                                                    key={provider.id} 
+                                                    className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer group"
+                                                    onClick={() => router.push(`/admin-dashboard/provider-services/${provider.id}`)}
+                                                >
+                                                    <TableCell className="font-medium text-slate-800 dark:text-slate-200 flex items-center">
+                                                        {provider.businessName}
+                                                        <Eye className="ml-2 h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
+                                                    </TableCell>
                                                     <TableCell className="text-slate-600 dark:text-slate-300">{provider.fullName}</TableCell>
                                                     <TableCell className="text-slate-600 dark:text-slate-300">{provider.email}</TableCell>
                                                     <TableCell><Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{provider.serviceCategory}</Badge></TableCell>
@@ -283,7 +289,7 @@ const AdminDashboardPage = () => {
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Customer</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Provider</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Services</TableHead>
-                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Date & Time</TableHead>
+                                                <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Date &amp; Time</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Total</TableHead>
                                                 <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Status</TableHead>
                                             </TableRow>
