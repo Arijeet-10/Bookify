@@ -13,11 +13,8 @@ const AdminFooter = () => {
 
   const navItems = [
     { href: '/admin-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
-    // Assuming admin manages providers and all bookings from the dashboard.
-    // We can add more specific links if needed, e.g., /admin-dashboard/providers, /admin-dashboard/bookings
-    // For now, keeping it simple and linking to the main dashboard sections.
-    { href: '/admin-dashboard#providers', label: 'Providers', icon: Icons.users }, // Link to providers tab
-    { href: '/admin-dashboard#bookings', label: 'Bookings', icon: Icons.calendarCheck }, // Link to bookings tab
+    { href: '/admin-dashboard/providers', label: 'Providers', icon: Icons.users }, // Updated to link to the new providers page
+    { href: '/admin-dashboard#bookings', label: 'Bookings', icon: Icons.calendarCheck }, // Link to bookings tab in main dashboard
     { href: '/profile', label: 'Profile', icon: Icons.user },
     // Placeholder for settings, can be linked to a future admin settings page
     // { href: '/admin-settings', label: 'Settings', icon: Icons.settings },
@@ -34,9 +31,10 @@ const AdminFooter = () => {
         {navItems.map((item) => {
           // For tab-based navigation within the dashboard, we check if the pathname starts with /admin-dashboard
           // and if the item.href includes a hash that matches a tab.
-          const isActive = item.href.includes('#') 
-            ? pathname === '/admin-dashboard' // Or more specific logic if tabs have their own routes
-            : pathname === item.href;
+           const isActive = item.href.includes('#')
+            ? pathname === '/admin-dashboard' && window.location.hash === item.href.substring(item.href.indexOf('#'))
+            : pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin-dashboard' && item.href !== '/profile');
+
 
           return (
             <li key={item.href} className="flex flex-col items-center">
