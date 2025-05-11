@@ -407,7 +407,7 @@ const AdminDashboardPage = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredProviders.slice(0,5).map((provider) => (
+                                            {filteredProviders.slice(0, 5).map((provider) => (
                                                 <TableRow 
                                                     key={provider.id} 
                                                     className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 group"
