@@ -1,3 +1,4 @@
+
 import type { ComponentProps } from "react";
 import {
   MapPin,
@@ -19,6 +20,10 @@ import {
   AlertCircle,
   SearchX,
   Filter,
+  Palette, // Added beauty icon
+  Settings, // Added for settings
+  Users, // Added for managing users/providers
+  CalendarCheck, // Added for managing bookings
 } from "lucide-react";
 
 // Define Icons object by directly assigning Lucide components
@@ -30,20 +35,22 @@ export const Icons = {
   calendar: (props: ComponentProps<typeof Calendar>) => <Calendar {...props} />,
   more: (props: ComponentProps<typeof MoreHorizontal>) => <MoreHorizontal {...props} />,
   scissors: (props: ComponentProps<typeof Scissors>) => <Scissors {...props} />,
-  briefcase: (props: ComponentProps<typeof Briefcase>) => <Briefcase {...props} />, // Added Briefcase
+  briefcase: (props: ComponentProps<typeof Briefcase>) => <Briefcase {...props} />, 
   dumbbell: (props: ComponentProps<typeof Dumbbell>) => <Dumbbell {...props} />,
-  smile: (props: ComponentProps<typeof Smile>) => <Smile {...props} />, // Placeholder for general positive/happy icon
-  map: (props: ComponentProps<typeof MapIcon>) => <MapIcon {...props} />, // Use the renamed MapIcon
+  smile: (props: ComponentProps<typeof Smile>) => <Smile {...props} />, 
+  map: (props: ComponentProps<typeof MapIcon>) => <MapIcon {...props} />, 
   share: (props: ComponentProps<typeof Share2>) => <Share2 {...props} />,
   thumbsup: (props: ComponentProps<typeof ThumbsUp>) => <ThumbsUp {...props} />,
   home: (props: ComponentProps<typeof Home>) => <Home {...props} />,
   user: (props: ComponentProps<typeof User>) => <User {...props} />,
-  tooth: (props: ComponentProps<typeof Smile>) => <Smile {...props} />, // Placeholder for Tooth, using Smile
-  layoutDashboard: (props: ComponentProps<typeof LayoutDashboard>) => <LayoutDashboard {...props} />, // Added Dashboard
-  // Consider replacing Smile placeholder for massage/beauty if HandHeart fits better
+  tooth: (props: ComponentProps<typeof Smile>) => <Smile {...props} />, 
+  layoutDashboard: (props: ComponentProps<typeof LayoutDashboard>) => <LayoutDashboard {...props} />, 
   massage: (props: ComponentProps<typeof HandHeart>) => <HandHeart {...props} />,
-  // Additional icons needed for the redesigned UI
   alertCircle: (props: ComponentProps<typeof AlertCircle>) => <AlertCircle {...props} />,
   searchX: (props: ComponentProps<typeof SearchX>) => <SearchX {...props} />,
   filter: (props: ComponentProps<typeof Filter>) => <Filter {...props} />,
+  beauty: (props: ComponentProps<typeof Palette>) => <Palette {...props} />,
+  settings: (props: ComponentProps<typeof Settings>) => <Settings {...props} />,
+  users: (props: ComponentProps<typeof Users>) => <Users {...props} />,
+  calendarCheck: (props: ComponentProps<typeof CalendarCheck>) => <CalendarCheck {...props} />,
 };

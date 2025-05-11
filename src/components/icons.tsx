@@ -1,8 +1,10 @@
+
 import type { ComponentProps } from "react";
 import {
   AlertCircle,
   Briefcase,
   Calendar,
+  CalendarCheck, // Added for admin bookings
   Dumbbell,
   Filter,
   HandHeart,
@@ -20,6 +22,8 @@ import {
   Star,
   ThumbsUp,
   User,
+  Users, // Added for admin providers
+  Settings, // Added for potential admin settings
 } from "lucide-react";
 
 // Define Icons object by directly assigning Lucide components
@@ -66,5 +70,10 @@ export const Icons = {
   massage: (props: ComponentProps<typeof HandHeart>) => (
     <HandHeart {...props} />
   ),
-  beauty: (props: ComponentProps<typeof Palette>) => <Palette {...props} />, // Added beauty icon using Palette
+  beauty: (props: ComponentProps<typeof Palette>) => <Palette {...props} />, 
+
+  // Admin specific icons
+  users: (props: ComponentProps<typeof Users>) => <Users {...props} />,
+  calendarCheck: (props: ComponentProps<typeof CalendarCheck>) => <CalendarCheck {...props} />,
+  settings: (props: ComponentProps<typeof Settings>) => <Settings {...props} />,
 };
