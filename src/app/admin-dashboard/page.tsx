@@ -11,7 +11,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, deleteDoc 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Trash2, Flag, ArrowRight, LineChart as LineChartIcon, BarChart3 as BarChartIcon, TrendingUp } from 'lucide-react';
+import { Briefcase, CalendarCheck, Users, LogOut, AlertCircle, Settings, Search, Eye, Trash2, Flag, ArrowRight, LineChart as LineChartIcon, BarChart3 as BarChartIcon, TrendingUp, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,11 +44,17 @@ interface ServiceProvider {
   createdAt?: Timestamp; // Added for signup chart
 }
 
+interface AppointmentService {
+  id: string;
+  name: string;
+  price: string;
+  duration: string;
+}
 interface Appointment {
   id: string;
   providerId: string;
   providerName: string;
-  services: { id: string; name: string; price: string; duration: string }[];
+  services: AppointmentService[];
   totalPrice: number;
   date: Timestamp; // Date of the appointment
   userId: string;
@@ -147,6 +153,13 @@ const AdminDashboardPage = () => {
         } finally {
             setLoadingAppointments(false);
         }
+    };
+    
+    const getServicesList = (services: AppointmentService[]): string => {
+        if (Array.isArray(services) && services.length > 0) {
+          return services.map(service => service.name).join(', ');
+        }
+        return 'N/A';
     };
 
     // Process data for Provider Signups Chart
@@ -394,7 +407,7 @@ const AdminDashboardPage = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredProviders.map((provider) => (
+                                            {filteredProviders.slice(0,5).map((provider) => (
                                                 <TableRow 
                                                     key={provider.id} 
                                                     className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 group"
@@ -447,6 +460,13 @@ const AdminDashboardPage = () => {
                                             )}
                                         </TableBody>
                                     </Table>
+                                     {filteredProviders.length > 5 && (
+                                        <div className="p-4 text-center">
+                                            <Button onClick={() => router.push('/admin-dashboard/providers')}>
+                                                View All Providers <ArrowRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </TabsContent>
@@ -454,13 +474,60 @@ const AdminDashboardPage = () => {
                         <TabsContent value="bookings" className="mt-6">
                            <Card className="dark:bg-slate-800/50">
                                 <CardHeader>
-                                    <CardTitle>View All Bookings</CardTitle>
-                                    <CardDescription>All customer bookings are managed on a dedicated page.</CardDescription>
+                                    <CardTitle>Recent Bookings</CardTitle>
+                                    <CardDescription>Showing the latest 5 bookings. Manage all on the dedicated bookings page.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-slate-600 dark:text-slate-300 mb-4">
-                                        Click the button below to navigate to the bookings management page where you can search, filter, and manage all appointments.
-                                    </p>
+                                    {loadingAppointments ? (
+                                        <div className="space-y-2">
+                                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-md bg-slate-200 dark:bg-slate-800" />)}
+                                        </div>
+                                    ) : allAppointments.length === 0 ? (
+                                        <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+                                            <Package className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                                            No bookings found.
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-auto border border-slate-200 dark:border-slate-800 rounded-lg mb-4">
+                                            <Table>
+                                                <TableHeader className="bg-slate-100 dark:bg-slate-800/70">
+                                                    <TableRow>
+                                                        <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Customer</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Provider</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Services</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Date &amp; Time</TableHead>
+                                                        <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Status</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {allAppointments.slice(0, 5).map((appt) => (
+                                                        <TableRow key={appt.id} className="dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                                            <TableCell className="text-slate-600 dark:text-slate-300">{appt.userName || 'N/A'}</TableCell>
+                                                            <TableCell className="font-medium text-slate-800 dark:text-slate-200">{appt.providerName}</TableCell>
+                                                            <TableCell className="text-slate-600 dark:text-slate-300 text-xs max-w-xs truncate">{getServicesList(appt.services)}</TableCell>
+                                                            <TableCell className="text-slate-600 dark:text-slate-300">{format(appt.date.toDate(), 'PPp')}</TableCell>
+                                                            <TableCell>
+                                                                <Badge 
+                                                                    variant={
+                                                                        appt.status.toLowerCase() === 'confirmed' ? 'default' 
+                                                                        : appt.status.toLowerCase() === 'cancelled' ? 'destructive' 
+                                                                        : 'secondary'
+                                                                    } 
+                                                                    className={
+                                                                        appt.status.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
+                                                                        : appt.status.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                                    }
+                                                                >
+                                                                    {appt.status}
+                                                                </Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
                                     <Button onClick={() => router.push('/admin-dashboard/bookings')}>
                                         Go to All Bookings <ArrowRight className="ml-2 h-4 w-4" />
                                     </Button>
@@ -478,3 +545,5 @@ export default AdminDashboardPage;
 
 
     
+
+      
