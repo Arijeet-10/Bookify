@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -14,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2 } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2, ShieldCheck, Banknote } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Structure for provider data
 interface ServiceProviderData {
@@ -25,7 +27,7 @@ interface ServiceProviderData {
 
 // Structure for selected services passed via query
 interface SelectedService {
-  id: string;
+  id:string;
   name: string;
   price: string;
   duration: string;
@@ -59,7 +61,8 @@ const BookingConfirmationPageContent = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<string>("pay_at_venue");
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -132,11 +135,20 @@ const BookingConfirmationPageContent = () => {
       return;
     }
 
+    // If 'Pay Online' is selected, this is where you would trigger the payment gateway.
+    // For this example, we'll assume payment is successful or 'Pay at Venue' is chosen.
+    if (paymentMethod === "pay_online") {
+      // TODO: Implement payment gateway integration here.
+      // For now, we'll simulate a successful payment for demonstration.
+      console.log("Simulating online payment...");
+      // If payment fails, show an error toast and return.
+      // If payment succeeds, proceed to create the booking.
+    }
+
     setBookingLoading(true);
     setError(null);
 
     try {
-      // Combine date and time into a single timestamp
       const [hours, minutesPart] = selectedTime.split(':');
       const [minutes, ampm] = minutesPart.split(' ');
       let hour = parseInt(hours);
@@ -145,10 +157,8 @@ const BookingConfirmationPageContent = () => {
 
       const appointmentDateTime = new Date(selectedDate);
       appointmentDateTime.setHours(hour, parseInt(minutes), 0, 0);
-
       const appointmentTimestamp = Timestamp.fromDate(appointmentDateTime);
 
-      // Data to be stored in the 'appointments' collection
       const appointmentData = {
         userId: user.uid,
         userName: user.displayName || user.email,
@@ -157,25 +167,22 @@ const BookingConfirmationPageContent = () => {
         services: selectedServices,
         totalPrice: totalPrice,
         date: appointmentTimestamp,
-        status: 'confirmed',
+        status: 'confirmed', // Or 'pending_payment' if online payment is initiated
+        paymentMethod: paymentMethod, // Store the chosen payment method
         createdAt: Timestamp.now(),
       };
 
-      // Store the appointment in Firestore
       const appointmentsRef = collection(db, 'appointments');
       const mainDocRef = await addDoc(appointmentsRef, appointmentData);
 
-      // Store in user's subcollection
       const userAppointmentsRef = collection(db, 'users', user.uid, 'appointments');
       await setDoc(doc(userAppointmentsRef, mainDocRef.id), appointmentData);
 
-      // Show success toast notification
       toast({
         title: "Booking Confirmed!",
         description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed.`,
       });
 
-      // Redirect to the bookings (calendar) page
       router.push('/calendar');
 
     } catch (err) {
@@ -193,7 +200,7 @@ const BookingConfirmationPageContent = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 pb-[80px]">
         <div className="w-full max-w-4xl px-4 py-8">
           <Skeleton className="h-12 w-3/4 mb-6" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -212,7 +219,7 @@ const BookingConfirmationPageContent = () => {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4">
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4 pb-[80px]">
         <Card className="w-full max-w-lg shadow-lg border border-red-200 dark:border-red-900">
           <CardHeader className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-900">
             <CardTitle className="text-red-700 dark:text-red-400 text-center">Error</CardTitle>
@@ -233,20 +240,14 @@ const BookingConfirmationPageContent = () => {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4">
+    <div className="flex flex-col items-center min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 pb-[80px]">
       <div className="w-full max-w-5xl">
-        {/* Header with progress steps */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 text-center">Complete Your Booking</h1>
-          
-          
         </div>
         
-        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column (Services & Provider) - Takes 2/3 on large screens */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Services Card */}
             <Card className="shadow-md border-0 dark:border rounded-xl overflow-hidden">
               <CardHeader className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-5">
                 <div className="flex items-center">
@@ -261,7 +262,7 @@ const BookingConfirmationPageContent = () => {
               </CardHeader>
               <CardContent className="bg-white dark:bg-slate-800 p-6">
                 <div className="space-y-4">
-                  {selectedServices.map((service, index) => (
+                  {selectedServices.map((service) => (
                     <div key={service.id} className="flex justify-between">
                       <div className="space-y-1">
                         <p className="font-medium text-slate-900 dark:text-white">{service.name}</p>
@@ -276,22 +277,7 @@ const BookingConfirmationPageContent = () => {
                     </div>
                   ))}
                 </div>
-                
                 <Separator className="my-6 dark:bg-slate-700" />
-                
-                <div className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Subtotal</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Service Fee</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-sm text-slate-900 dark:text-white">₹{totalPrice.toFixed(2)}</p>
-                    <p className="text-sm text-slate-900 dark:text-white">₹0.00</p>
-                  </div>
-                </div>
-                
-                <Separator className="my-6 dark:bg-slate-700" />
-                
                 <div className="flex justify-between items-center">
                   <p className="font-semibold text-lg text-slate-900 dark:text-white">Total</p>
                   <p className="font-semibold text-lg text-slate-900 dark:text-white">₹{totalPrice.toFixed(2)}</p>
@@ -299,7 +285,6 @@ const BookingConfirmationPageContent = () => {
               </CardContent>
             </Card>
             
-            {/* Provider Card */}
             <Card className="shadow-md border-0 dark:border rounded-xl overflow-hidden">
               <CardHeader className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-5">
                 <div className="flex items-center">
@@ -315,6 +300,7 @@ const BookingConfirmationPageContent = () => {
               <CardContent className="bg-white dark:bg-slate-800 p-6">
                 <div className="flex items-center">
                   <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center mr-4">
+                    {/* Placeholder for provider image */}
                     <User className="h-8 w-8 text-slate-500 dark:text-slate-400" />
                   </div>
                   <div>
@@ -326,7 +312,6 @@ const BookingConfirmationPageContent = () => {
             </Card>
           </div>
           
-          {/* Right Column (Calendar & Time) - Takes 1/3 on large screens */}
           <div>
             <Card className="shadow-md border-0 dark:border rounded-xl overflow-hidden h-full">
               <CardHeader className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-5">
@@ -335,13 +320,12 @@ const BookingConfirmationPageContent = () => {
                     <CalendarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Schedule</CardTitle>
-                    <CardDescription className="text-slate-500 dark:text-slate-400">Choose date and time</CardDescription>
+                    <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Schedule & Payment</CardTitle>
+                    <CardDescription className="text-slate-500 dark:text-slate-400">Choose date, time, and payment</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="bg-white dark:bg-slate-800 p-6 space-y-6">
-                {/* Date Selection */}
                 <div className="space-y-3">
                   <Label htmlFor="date-picker" className="text-sm font-medium text-slate-900 dark:text-white">
                     Select Date
@@ -358,7 +342,6 @@ const BookingConfirmationPageContent = () => {
                   </div>
                 </div>
                 
-                {/* Time Selection */}
                 <div className="space-y-3">
                   <Label htmlFor="time-select" className="text-sm font-medium text-slate-900 dark:text-white">
                     Select Time
@@ -377,7 +360,6 @@ const BookingConfirmationPageContent = () => {
                   </Select>
                 </div>
                 
-                {/* Appointment Summary */}
                 {selectedDate && selectedTime && (
                   <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/50 p-4">
                     <div className="flex">
@@ -397,23 +379,48 @@ const BookingConfirmationPageContent = () => {
                   </div>
                 )}
                 
-                {/* Payment Method (Optional - for UI only) */}
+                {/* THIS IS WHERE PAYMENT INTEGRATION OPTIONS WOULD GO */}
                 <div className="mt-6 space-y-3">
                   <h3 className="text-sm font-medium text-slate-900 dark:text-white flex items-center">
                     <CreditCard className="h-4 w-4 mr-2" />
-                    Payment Method
+                    Payment Options
                   </h3>
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center">
-                    <div className="h-8 w-12 bg-slate-200 dark:bg-slate-700 rounded mr-3"></div>
-                    <span className="text-sm text-slate-900 dark:text-white">Pay After Service</span>
-                  </div>
+                  <RadioGroup defaultValue="pay_at_venue" onValueChange={setPaymentMethod} className="space-y-2">
+                    <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <RadioGroupItem value="pay_at_venue" id="pay_at_venue" />
+                      <Label htmlFor="pay_at_venue" className="text-sm text-slate-900 dark:text-white cursor-pointer">
+                        <Banknote className="h-4 w-4 mr-2 inline-block" /> Pay at Venue
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <RadioGroupItem value="pay_online" id="pay_online" />
+                      <Label htmlFor="pay_online" className="text-sm text-slate-900 dark:text-white cursor-pointer">
+                         <ShieldCheck className="h-4 w-4 mr-2 inline-block text-green-500" /> Pay Online Securely
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                   {/* Placeholder for online payment button/form */}
+                   {paymentMethod === "pay_online" && (
+                    <div className="mt-4">
+                       <Button 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        // onClick={handleInitiateOnlinePayment} // This would trigger your payment gateway
+                        disabled={bookingLoading || !selectedDate || !selectedTime}
+                       >
+                         <CreditCard className="mr-2 h-4 w-4" /> Pay ₹{totalPrice.toFixed(2)} Now
+                       </Button>
+                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
+                         You will be redirected to a secure payment gateway.
+                       </p>
+                    </div>
+                  )}
+                   {/* End of payment integration placeholder */}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
         
-        {/* Action Buttons */}
         <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-between">
           <Button 
             variant="outline" 
@@ -424,35 +431,37 @@ const BookingConfirmationPageContent = () => {
             Back to Services
           </Button>
           
-          <Button
-            onClick={handleConfirmBooking}
-            disabled={!selectedDate || !selectedTime || bookingLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            size="lg"
-          >
-            {bookingLoading ? (
-              <span className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </span>
-            ) : (
-              <span className="flex items-center">
-                Confirm Appointment
-                <CheckCircle className="h-4 w-4 ml-2" />
-              </span>
-            )}
-          </Button>
+          {/* The main confirm button's role might change if online payment is chosen first */}
+          {paymentMethod === "pay_at_venue" && (
+            <Button
+              onClick={handleConfirmBooking}
+              disabled={!selectedDate || !selectedTime || bookingLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="lg"
+            >
+              {bookingLoading ? (
+                <span className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  Confirm Appointment
+                  <CheckCircle className="h-4 w-4 ml-2" />
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Use Suspense to handle client-side data fetching
 const BookingConfirmationPage = () => {
   return (
     <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 pb-[80px]">
         <div className="w-full max-w-4xl px-4">
           <Skeleton className="h-8 w-1/2 mx-auto mb-8" />
           <Skeleton className="h-4 w-1/3 mx-auto mb-12" />
@@ -472,3 +481,4 @@ const BookingConfirmationPage = () => {
 };
 
 export default BookingConfirmationPage;
+
