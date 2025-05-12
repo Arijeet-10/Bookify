@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -185,27 +184,30 @@ const BookingConfirmationPageContent = () => {
 
       const appointmentData = {
         userId: user.uid,
-        userName: user.displayName || user.email,
+        userName: user.displayName || user.email || "Customer", // More robust fallback
         providerId: providerId,
         providerName: providerData.businessName,
         services: selectedServices,
         totalPrice: totalPrice,
         date: appointmentTimestamp,
-        status: 'confirmed', // Or 'pending_payment' if online payment is initiated
-        paymentMethod: paymentMethod, // Store the chosen payment method
-        selectedTime: selectedTime, // Store the selected time string
+        status: 'confirmed', 
+        paymentMethod: paymentMethod, 
+        selectedTime: selectedTime, 
         createdAt: Timestamp.now(),
       };
 
+      console.log("Attempting to save appointment with data:", JSON.stringify(appointmentData, null, 2));
       const appointmentsRef = collection(db, 'appointments');
       const mainDocRef = await addDoc(appointmentsRef, appointmentData);
+      console.log("Main appointment document written with ID: ", mainDocRef.id);
+
 
       const userAppointmentsRef = collection(db, 'users', user.uid, 'appointments');
       await setDoc(doc(userAppointmentsRef, mainDocRef.id), appointmentData);
+      console.log(`User-specific appointment document written for user ${user.uid} with ID: ${mainDocRef.id}`);
 
       // Create in-app notification for the service provider
-      const providerNotificationsRef = collection(db, 'serviceProviders', providerId, 'notifications');
-      await addDoc(providerNotificationsRef, {
+      const notificationData = {
         type: 'new_booking',
         message: `New booking from ${appointmentData.userName} for ${selectedServices.map(s => s.name).join(', ')} on ${format(appointmentDateTime, 'PPP p')}.`,
         appointmentId: mainDocRef.id,
@@ -215,7 +217,11 @@ const BookingConfirmationPageContent = () => {
         appointmentDate: appointmentTimestamp,
         isRead: false,
         createdAt: Timestamp.now(),
-      });
+      };
+      console.log("Attempting to save notification with data:", JSON.stringify(notificationData, null, 2));
+      const providerNotificationsRef = collection(db, 'serviceProviders', providerId, 'notifications');
+      const notificationDocRef = await addDoc(providerNotificationsRef, notificationData);
+      console.log("Provider notification document written with ID: ", notificationDocRef.id);
       
       toast({
         title: "Booking Confirmed!",
@@ -227,17 +233,6 @@ const BookingConfirmationPageContent = () => {
           </div>
         )
       });
-
-
-      // TODO: Implement logic here to send an email notification to the service provider
-      // This likely requires a serverless function (e.g., Firebase Cloud Function) or a backend service.
-      // Email content should include:
-      // - Customer Name: appointmentData.userName
-      // - Services Booked: selectedServices.map(s => s.name).join(', ')
-      // - Appointment Date: format(appointmentDateTime, 'EEEE, MMMM d, yyyy')
-      // - Appointment Time: selectedTime
-      // - Total Price: totalPrice.toFixed(2)
-      // - Link to view booking in their dashboard
 
       router.push('/calendar');
 
@@ -376,7 +371,7 @@ const BookingConfirmationPageContent = () => {
                     <CalendarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Schedule & Payment</CardTitle>
+                    <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Schedule &amp; Payment</CardTitle>
                     <CardDescription className="text-slate-500 dark:text-slate-400">Choose date, time, and payment</CardDescription>
                   </div>
                 </div>
