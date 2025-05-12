@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2, ShieldCheck, Banknote } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2, ShieldCheck, Banknote, Bell } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Structure for provider data
@@ -203,10 +203,41 @@ const BookingConfirmationPageContent = () => {
       const userAppointmentsRef = collection(db, 'users', user.uid, 'appointments');
       await setDoc(doc(userAppointmentsRef, mainDocRef.id), appointmentData);
 
+      // Create in-app notification for the service provider
+      const providerNotificationsRef = collection(db, 'serviceProviders', providerId, 'notifications');
+      await addDoc(providerNotificationsRef, {
+        type: 'new_booking',
+        message: `New booking from ${appointmentData.userName} for ${selectedServices.map(s => s.name).join(', ')} on ${format(appointmentDateTime, 'PPP p')}.`,
+        appointmentId: mainDocRef.id,
+        userId: user.uid,
+        userName: appointmentData.userName,
+        serviceNames: selectedServices.map(s => s.name).join(', '),
+        appointmentDate: appointmentTimestamp,
+        isRead: false,
+        createdAt: Timestamp.now(),
+      });
+      
       toast({
         title: "Booking Confirmed!",
-        description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed.`,
+        description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed. A notification has been sent to the provider.`,
+        action: (
+          <div className="flex items-center">
+            <Bell className="h-5 w-5 text-green-500 mr-2" />
+            <span>Provider Notified</span>
+          </div>
+        )
       });
+
+
+      // TODO: Implement logic here to send an email notification to the service provider
+      // This likely requires a serverless function (e.g., Firebase Cloud Function) or a backend service.
+      // Email content should include:
+      // - Customer Name: appointmentData.userName
+      // - Services Booked: selectedServices.map(s => s.name).join(', ')
+      // - Appointment Date: format(appointmentDateTime, 'EEEE, MMMM d, yyyy')
+      // - Appointment Time: selectedTime
+      // - Total Price: totalPrice.toFixed(2)
+      // - Link to view booking in their dashboard
 
       router.push('/calendar');
 

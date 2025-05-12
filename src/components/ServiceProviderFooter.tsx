@@ -14,7 +14,7 @@ const ServiceProviderFooter = () => {
     { href: '/service-provider-dashboard', label: 'Dashboard', icon: Icons.layoutDashboard },
     { href: '/service-provider-bookings', label: 'Bookings', icon: Icons.calendar },
     { href: '/service-provider-services', label: 'Services', icon: Icons.briefcase },
-    { href: '/profile', label: 'Profile', icon: Icons.user },
+    { href: '/service-provider-profile', label: 'Profile', icon: Icons.user },
   ];
 
   return (

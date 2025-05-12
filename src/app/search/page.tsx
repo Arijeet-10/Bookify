@@ -66,10 +66,10 @@ const SearchPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const providersCollectionRef = collection(db, 'serviceProviders');
+ const providersCollectionRef = collection(db, 'serviceProviders');
+ const fetchedProviders: ServiceProvider[] = [];
         const q = query(providersCollectionRef);
         const querySnapshot = await getDocs(q);
-        const fetchedProviders: ServiceProvider[] = [];
         querySnapshot.forEach((doc) => {
           fetchedProviders.push({ id: doc.id, ...doc.data() } as ServiceProvider);
         });
@@ -88,6 +88,15 @@ const SearchPage = () => {
  // Filter providers based on search query and selected categories
   const filteredProviders = useMemo(() => {
     let tempProviders = providers;
+
+    // Filter by location query (case-insensitive)
+ if (whereQuery) {
+      const lowerCaseWhereQuery = whereQuery.toLowerCase();
+      tempProviders = tempProviders.filter(provider =>
+ provider.address?.toLowerCase().includes(lowerCaseWhereQuery)
+ );
+ }
+
 
     // Filter by search query
     if (searchQuery) {
@@ -108,7 +117,7 @@ const SearchPage = () => {
     }
 
     return tempProviders;
-  }, [providers, filters, searchQuery]);
+  }, [providers, filters, searchQuery, whereQuery]);
 
   // Handle filter button clicks
   const handleFilterChange = (filterId: string) => {
@@ -279,6 +288,12 @@ const SearchPage = () => {
                 Results
               </h2>
               <div className="flex items-center">
+                {whereQuery && (
+ <Badge variant="secondary" className="mr-2 px-3 py-1">
+ Location filter applied: "{whereQuery}"
+ </Badge>
+ )}
+
                 {filters.length > 0 && (
                   <Badge variant="outline" className="mr-2 px-3 py-1">
                     {filters.length} filter{filters.length > 1 ? 's' : ''} applied
@@ -359,6 +374,14 @@ const SearchPage = () => {
                               <CardTitle className="text-xl font-semibold text-slate-800 dark:text-slate-200">
                                 {provider.businessName}
                               </CardTitle>
+
+                              {/* Address */}
+ {provider.address && (
+ <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 gap-1">
+ <Icons.mapPin className="w-4 h-4 text-slate-400" />
+ <span>{provider.address}</span>
+ </div>
+ )}
 
                               {/* Distance */}
                               <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
