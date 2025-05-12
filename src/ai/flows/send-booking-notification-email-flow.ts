@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview A Genkit flow to send a booking notification email to a service provider.
- * This flow simulates email sending for demonstration purposes.
+ * This flow uses nodemailer to send actual emails.
  *
  * - sendBookingNotificationEmail - A function that handles the email notification process.
  * - SendBookingNotificationEmailInput - The input type for the function.
@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/ai-instance'; // Ensure this path is correct
 import {z} from 'genkit';
+import nodemailer from 'nodemailer';
 
 const SendBookingNotificationEmailInputSchema = z.object({
   providerEmail: z.string().email().describe('The email address of the service provider.'),
@@ -21,8 +22,10 @@ const SendBookingNotificationEmailInputSchema = z.object({
 export type SendBookingNotificationEmailInput = z.infer<typeof SendBookingNotificationEmailInputSchema>;
 
 const SendBookingNotificationEmailOutputSchema = z.object({
-  status: z.string().describe('The status of the email notification (e.g., "Email notification simulated successfully.").'),
-  simulatedEmailContent: z.string().optional().describe('The content of the simulated email.'),
+  status: z.string().describe('The status of the email notification (e.g., "Email sent successfully." or "Failed to send email.").'),
+  messageId: z.string().optional().describe('The message ID if the email was sent successfully.'),
+  error: z.string().optional().describe('Error message if email sending failed.'),
+  sentEmailContent: z.string().optional().describe('The content of the email that was attempted to be sent.'),
 });
 export type SendBookingNotificationEmailOutput = z.infer<typeof SendBookingNotificationEmailOutputSchema>;
 
@@ -33,25 +36,22 @@ export async function sendBookingNotificationEmail(input: SendBookingNotificatio
 const emailPrompt = ai.definePrompt({
   name: 'sendBookingNotificationEmailPrompt',
   input: {schema: SendBookingNotificationEmailInputSchema},
-  // Output schema for the prompt itself can be simpler if the flow constructs the final output
-  output: {schema: z.object({ emailBody: z.string() })}, 
+  // Output schema for the prompt itself to generate subject and body
+  output: {schema: z.object({ emailSubject: z.string(), emailBody: z.string() })}, 
   prompt: `
-Subject: New Booking Confirmation for {{businessName}}
+Generate an email subject and body for a new booking notification.
 
-Dear {{businessName}},
-
-You have a new booking!
-
-Customer: {{customerName}}
+Booking Details:
+Provider Business: {{businessName}}
+Customer Name: {{customerName}}
 Appointment Date & Time: {{appointmentDateTime}}
-
 Services Booked:
 {{{serviceDetails}}}
 
-Please log in to your dashboard to view the full details and manage this appointment.
-
-Regards,
-Bookify Platform
+The email should be professional and clearly inform the provider about the new booking.
+The subject should be concise and informative, like "New Booking Confirmation for {{businessName}}".
+The body should start with "Dear {{businessName}}," and include all the booking details.
+End with "Regards, Bookify Platform".
 `,
 });
 
@@ -62,25 +62,59 @@ const sendBookingNotificationEmailFlow = ai.defineFlow(
     outputSchema: SendBookingNotificationEmailOutputSchema,
   },
   async (input) => {
-    console.log(`Simulating email sending to: ${input.providerEmail}`);
+    // Check for necessary environment variables for nodemailer
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL } = process.env;
+    const smtpSecure = process.env.SMTP_SECURE === 'true';
+
+    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM_EMAIL) {
+      console.error('SMTP environment variables are not fully configured.');
+      return {
+        status: 'Email sending not configured. Missing SMTP environment variables.',
+        sentEmailContent: 'Email not generated due to configuration issues.',
+      };
+    }
     
     // Generate the email content using the prompt
     const { output: promptOutput } = await emailPrompt(input);
-    const emailContent = promptOutput?.emailBody || "Could not generate email content.";
+    const emailSubject = promptOutput?.emailSubject || `New Booking for ${input.businessName}`;
+    const emailBody = promptOutput?.emailBody || `Dear ${input.businessName},\n\nYou have a new booking from ${input.customerName} on ${input.appointmentDateTime} for:\n${input.serviceDetails}\n\nRegards,\nBookify Platform`;
 
-    console.log('Simulated Email Content:\n', emailContent);
+    // Create a nodemailer transporter
+    // User needs to set these environment variables:
+    // SMTP_HOST, SMTP_PORT, SMTP_SECURE (true/false), SMTP_USER, SMTP_PASS, SMTP_FROM_EMAIL
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: parseInt(SMTP_PORT, 10),
+      secure: smtpSecure, // true for 465, false for other ports
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
 
-    // In a real application, you would integrate with an email service here.
-    // For example, using Nodemailer, SendGrid, Mailgun, etc.
-    // await emailService.send({
-    //   to: input.providerEmail,
-    //   subject: `New Booking Confirmation for ${input.businessName}`,
-    //   html: emailContent, // or text: emailContent
-    // });
-
-    return {
-      status: 'Email notification simulated successfully.',
-      simulatedEmailContent: emailContent,
+    const mailOptions = {
+      from: `"Bookify Platform" <${SMTP_FROM_EMAIL}>`,
+      to: input.providerEmail,
+      subject: emailSubject,
+      html: emailBody.replace(/\n/g, '<br>'), // Simple conversion of newlines to <br> for HTML email
+      text: emailBody,
     };
+
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent: %s', info.messageId);
+      return {
+        status: 'Email sent successfully.',
+        messageId: info.messageId,
+        sentEmailContent: emailBody,
+      };
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      return {
+        status: 'Failed to send email.',
+        error: error.message || 'Unknown error occurred during email sending.',
+        sentEmailContent: emailBody, // Still return the content that was attempted
+      };
+    }
   }
 );
