@@ -15,7 +15,7 @@ interface UserData {
   fullName?: string;
   email?: string | null;
   role?: string;
-  photoURL?: string | null;
+  profileImageUrl?: string | null;
   // Add fields specific to service providers if needed, fetched conditionally
   businessName?: string;
   serviceCategory?: string;
@@ -41,7 +41,7 @@ const ProfilePage = () => {
               fullName: baseUserData.fullName || user.displayName, // Prioritize Firestore name
               email: user.email,
               role: baseUserData.role || 'user', // Default role if not found
-              photoURL: user.photoURL, // Get photo from auth provider
+              profileImageUrl: baseUserData.profileImageUrl || undefined, // Get photo from auth provider
             };
 
             // If the role is serviceProvider, fetch additional data from 'serviceProviders' collection
@@ -74,7 +74,7 @@ const ProfilePage = () => {
               fullName: user.displayName || 'N/A',
               email: user.email,
               role: 'user', // Default role
-              photoURL: user.photoURL,
+              profileImageUrl: user.profileImageUrl,
             });
             console.warn("User document not found in 'users' collection for UID:", user.uid);
              setError("Profile data incomplete. Please contact support.");
@@ -87,7 +87,7 @@ const ProfilePage = () => {
             fullName: user.displayName || 'N/A',
             email: user.email,
             role: 'N/A',
-            photoURL: user.photoURL,
+            profileImageUrl: user.profileImageUrl,
           });
         } finally {
           setLoading(false);
@@ -127,7 +127,7 @@ const ProfilePage = () => {
               <Skeleton className="w-24 h-24 rounded-full" />
             ) : (
               <>
-                <AvatarImage src={userData?.photoURL ?? undefined} alt={userData?.fullName ?? 'User'} />
+                <AvatarImage src={userData?.profileImageUrl ?? undefined} alt={userData?.fullName ?? 'User'} />
                 <AvatarFallback className="text-3xl">{getInitials(userData?.fullName)}</AvatarFallback>
               </>
             )}

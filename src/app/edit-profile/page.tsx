@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { CldUploadButton } from 'next-cloudinary';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { User } from 'firebase/auth';
 
@@ -17,6 +19,7 @@ import type { User } from 'firebase/auth';
 interface UserData {
   fullName: string;
   email: string;
+  profileImageUrl?: string;
   role: string;
 }
 
@@ -41,6 +44,7 @@ const EditProfilePage = () => {
               fullName: data.fullName || '',
               email: user.email || '',
               role: data.role || 'user',
+              profileImageUrl: data.profileImageUrl || '',
             });
           } else {
             setError('User data not found.');
@@ -76,6 +80,7 @@ const EditProfilePage = () => {
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, {
         fullName: userData.fullName,
+        profileImageUrl: userData.profileImageUrl || '',
       });
       toast({
         variant: 'default',
@@ -100,6 +105,22 @@ const EditProfilePage = () => {
     }));
   };
 
+  const handleImageUploadSuccess = (result: any) => {
+    if (result.event === 'success') {
+      const secureUrl = result.info.secure_url;
+      setUserData((prevData) => {
+        if (!prevData) return null;
+        return {
+          ...prevData,
+          profileImageUrl: secureUrl,
+        };
+      });
+      toast({
+        description: 'Profile image uploaded successfully.',
+      });
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -121,6 +142,15 @@ const EditProfilePage = () => {
         </CardHeader>
         <CardContent className="grid gap-4">
           <form onSubmit={handleSubmit} className="grid gap-4">
+             <div className="flex flex-col items-center gap-4">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={userData.profileImageUrl || ''} alt={userData.fullName || 'User'} />
+                <AvatarFallback>{userData.fullName ? userData.fullName.charAt(0) : 'U'}</AvatarFallback>
+              </Avatar>
+               <CldUploadButton uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} onSuccess={handleImageUploadSuccess}>
+                <Button type="button" variant="outline">Upload Profile Image</Button>
+              </CldUploadButton>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input
