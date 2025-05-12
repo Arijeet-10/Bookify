@@ -384,10 +384,7 @@ const SearchPage = () => {
  )}
 
                               {/* Distance */}
-                              <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                <Icons.mapPin className="w-4 h-4 text-slate-400" />
-                                <span>{distance}</span>
-                              </div>
+                             
 
                               {/* Phone Number */}
                               {provider.phoneNumber && (
