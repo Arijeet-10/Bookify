@@ -43,6 +43,11 @@ export const metadata: Metadata = {
     description: 'From salons to handymen — find and book trusted services with Bookify.',
     images: ['https://bookify-2h66.onrender.com/og-image.png'],
   },
+  // Making environment variables available to the client if needed by including them in metadata,
+  // though for Cloudinary preset, it's better to access directly via process.env.NEXT_PUBLIC_... in the component.
+  // This is more for demonstration or if a specific setup requires it.
+  // It's generally not recommended to expose sensitive keys this way.
+  // For NEXT_PUBLIC_ variables, direct access in client components is fine.
 };
 
 
@@ -61,3 +66,4 @@ export default function RootLayout({
     </html>
   );
 }
+
