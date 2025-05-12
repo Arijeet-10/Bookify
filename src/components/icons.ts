@@ -13,6 +13,7 @@ import {
   Map as MapIcon, // Renamed Map to avoid conflict with JS Map
   Share2,
   ThumbsUp,
+  Phone ,
   Home,
   User,
   LayoutDashboard, // Added for dashboard icon
@@ -53,4 +54,6 @@ export const Icons = {
   settings: (props: ComponentProps<typeof Settings>) => <Settings {...props} />,
   users: (props: ComponentProps<typeof Users>) => <Users {...props} />,
   calendarCheck: (props: ComponentProps<typeof CalendarCheck>) => <CalendarCheck {...props} />,
+  phone: (props: ComponentProps<typeof Phone>) => <Phone {...props} />,
+
 };

@@ -13,6 +13,7 @@ import {
   Map as MapIcon, // Renamed Map to avoid conflict with JS Map
   MapPin,
   MoreHorizontal,
+  Phone,
   Palette,
   Scissors,
   Search,
@@ -76,4 +77,5 @@ export const Icons = {
   users: (props: ComponentProps<typeof Users>) => <Users {...props} />,
   calendarCheck: (props: ComponentProps<typeof CalendarCheck>) => <CalendarCheck {...props} />,
   settings: (props: ComponentProps<typeof Settings>) => <Settings {...props} />,
+  phone: (props: ComponentProps<typeof Phone>) => <Phone {...props} />,
 };
