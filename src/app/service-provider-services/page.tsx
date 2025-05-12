@@ -6,24 +6,22 @@ import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, getDocs, doc, getDoc, deleteDoc, Timestamp, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, deleteDoc, Timestamp, addDoc, serverTimestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import AddServiceDialog from './_components/AddServiceDialog';
 import EditServiceDialog from './_components/EditServiceDialog';
 import { CldUploadButton } from 'next-cloudinary';
-import { 
-  PlusCircle, 
-  Trash2, 
-  Pencil, 
-  Clock, 
-  IndianRupee, 
-  Package, 
-  Search, 
-  ChevronUp, 
-  ChevronDown,
+import {
+  PlusCircle,
+  Trash2, ChevronDown, ChevronUp,
+  Pencil,
+  Clock,
+  IndianRupee,
+  Package,
+  Search,
   Image as ImageIcon, // For gallery section
-  UploadCloud,
+  ChevronRight, ChevronDown as ChevronDownIcon, // For collapsible
   AlertCircle
 } from 'lucide-react';
 import {
@@ -40,6 +38,9 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { UploadCloud } from 'lucide-react'; // Import UploadCloud separately if needed for clarity
+import { Save } from 'lucide-react'; // Import Save separately if needed for clarity
 import Image from 'next/image'; // For displaying gallery images
 
 // Define the structure of a service object
@@ -70,8 +71,15 @@ const ServiceProviderServicesPage = () => {
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'duration'>('name');
   const router = useRouter();
 
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [closingTime, setClosingTime] = useState('');
+  const [openingTime, setOpeningTime] = useState('');
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [galleryError, setGalleryError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,6 +92,13 @@ const ServiceProviderServicesPage = () => {
           if (userDocSnap.exists() && userDocSnap.data()?.role === 'serviceProvider') {
             fetchServices(currentUser.uid);
             fetchGalleryImages(currentUser.uid); // Fetch gallery images
+            const userData = userDocSnap.data() as any; // Cast to any for dynamic access
+            setAddress(userData?.address || '');
+            setCity(userData?.city || '');
+            setZipCode(userData?.zipCode || '');
+            setPhoneNumber(userData?.phoneNumber || '');
+            setOpeningTime(userData?.openingTime || '');
+            setClosingTime(userData?.closingTime || '');
           } else {
             setError('Access denied. You are not registered as a service provider.');
             setLoading(false);
@@ -119,8 +134,8 @@ const ServiceProviderServicesPage = () => {
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(service => 
-        service.name.toLowerCase().includes(query) || 
+      result = result.filter(service =>
+        service.name.toLowerCase().includes(query) ||
         service.price.toLowerCase().includes(query) ||
         service.duration.toLowerCase().includes(query)
       );
@@ -129,8 +144,8 @@ const ServiceProviderServicesPage = () => {
     // Apply sorting
     result.sort((a, b) => {
       if (sortBy === 'name') {
-        return sortDirection === 'asc' 
-          ? a.name.localeCompare(b.name) 
+        return sortDirection === 'asc'
+          ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name);
       } else if (sortBy === 'price') {
         // Extract numeric price values for comparison
@@ -151,7 +166,7 @@ const ServiceProviderServicesPage = () => {
   const getServicesCollectionRef = (userId: string) => {
     return collection(db, 'serviceProviders', userId, 'services');
   };
-  
+
   const getGalleryCollectionRef = (userId: string) => {
     return collection(db, 'serviceProviders', userId, 'imageGallery');
   };
@@ -216,7 +231,7 @@ const ServiceProviderServicesPage = () => {
         )
       );
       // Optionally, refetch if there are complex dependencies or server-side logic
-      // fetchServices(user.uid); 
+      // fetchServices(user.uid);
     }
   };
 
@@ -234,10 +249,10 @@ const ServiceProviderServicesPage = () => {
       });
     } catch (err) {
       console.error('Error deleting service:', err);
-       toast({
-          title: "Error Deleting Service",
-          description: "Could not delete the service. Please try again.",
-          variant: "destructive",
+      toast({
+        title: "Error Deleting Service",
+        description: "Could not delete the service. Please try again.",
+        variant: "destructive",
       });
       setError('Failed to delete service. Please try again.');
     }
@@ -292,6 +307,32 @@ const ServiceProviderServicesPage = () => {
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setIsSavingProfile(true);
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        address,
+        city,
+        zipCode,
+        phoneNumber,
+        openingTime,
+        closingTime,
+      }, { merge: true }); // Use merge: true to only update specified fields
+
+      toast({
+        title: "Profile Updated",
+        description: "Your contact and hours information has been saved.",
+      });
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({ title: "Error", description: "Failed to save profile. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
   const toggleSort = (column: 'name' | 'price' | 'duration') => {
     if (sortBy === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -309,6 +350,79 @@ const ServiceProviderServicesPage = () => {
   return (
     <div className="flex flex-col items-center min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 p-4 pb-[120px]">
       <div className="w-full max-w-5xl">
+        {/* Contact & Hours Section */}
+        <Card className="shadow-lg border-0 dark:bg-gray-850 overflow-hidden mt-8">
+          <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white p-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight flex items-center">
+                <Clock className="mr-3 h-6 w-6" /> Contact & Hours
+              </h2>
+              <p className="text-purple-100 mt-1">Set your contact details and business hours</p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your business address"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Enter your city"
+              />
+            </div>
+            <div>
+              <Label htmlFor="zipCode">Zip Code</Label>
+              <Input
+                id="zipCode"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                placeholder="Enter your zip code"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Enter your phone number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="openingTime">Opening Time</Label>
+              <Input
+                id="openingTime"
+                type="time"
+                value={openingTime}
+                onChange={(e) => setOpeningTime(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="closingTime">Closing Time</Label>
+              <Input
+                id="closingTime"
+                type="time"
+                value={closingTime}
+                onChange={(e) => setClosingTime(e.target.value)}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="p-4 bg-slate-50 dark:bg-gray-850 border-t border-slate-200 dark:border-gray-700 flex justify-end">
+            <Button onClick={handleSaveProfile} disabled={isSavingProfile || !user}>
+              {isSavingProfile ? 'Saving...' : <><Save className="mr-2 h-4 w-4" /> Save Profile</>}
+            </Button>
+          </CardFooter>
+        </Card>
         <Card className="shadow-lg border-0 dark:bg-gray-850 overflow-hidden mb-8">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-700 dark:to-indigo-900 text-white p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -320,7 +434,7 @@ const ServiceProviderServicesPage = () => {
                 userId={user?.uid}
                 onServiceAdded={handleServiceAdded}
               >
-                <Button 
+                <Button
                   className="bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800 shadow-sm transition-all"
                   disabled={loading || !!error}
                 >
@@ -329,7 +443,7 @@ const ServiceProviderServicesPage = () => {
               </AddServiceDialog>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-6">
             {/* Search and filter bar */}
             <div className="relative mb-6">
@@ -359,7 +473,7 @@ const ServiceProviderServicesPage = () => {
                     <div>
                       <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Average Price</p>
                       <p className="text-2xl font-bold">
-                        ₹{services.length > 0 
+                        ₹{services.length > 0
                           ? (services.reduce((sum, service) => sum + parseFloat(service.price.replace(/[^\d.]/g, '')), 0) / services.length).toFixed(2)
                           : '0.00'}
                       </p>
@@ -382,21 +496,21 @@ const ServiceProviderServicesPage = () => {
             {/* Table header with sorting */}
             {!loading && !error && services.length > 0 && (
               <div className="hidden md:grid grid-cols-12 bg-slate-100 dark:bg-gray-800 rounded-t-md p-3 mb-1 font-medium text-slate-600 dark:text-slate-300">
-                <div 
+                <div
                   className="col-span-4 flex items-center cursor-pointer"
                   onClick={() => toggleSort('name')}
                 >
                   Service Name
                   <span className="ml-1">{getSortIcon('name')}</span>
                 </div>
-                <div 
+                <div
                   className="col-span-3 flex items-center cursor-pointer"
                   onClick={() => toggleSort('price')}
                 >
                   Price
                   <span className="ml-1">{getSortIcon('price')}</span>
                 </div>
-                <div 
+                <div
                   className="col-span-3 flex items-center cursor-pointer"
                   onClick={() => toggleSort('duration')}
                 >
@@ -457,17 +571,17 @@ const ServiceProviderServicesPage = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3"> {/* Check if filteredServices is an array before mapping */}
                 {filteredServices.map((service) => (
-                  <div 
-                    key={service.id} 
+                  <div
+                    key={service.id}
                     className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between">
                       <div className="mb-3 md:mb-0">
                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                           <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200">{service.name}</h3>
-                          
+
                           <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
                             <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-700">
                               <IndianRupee className="h-3 w-3" />
@@ -480,7 +594,7 @@ const ServiceProviderServicesPage = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2 self-end md:self-auto">
                         {user && (
                           <EditServiceDialog
@@ -488,8 +602,8 @@ const ServiceProviderServicesPage = () => {
                             service={service}
                             onServiceUpdated={handleServiceUpdated}
                           >
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               className="bg-slate-50 hover:bg-slate-100 dark:bg-gray-700 dark:hover:bg-gray-600"
                             >
@@ -500,8 +614,8 @@ const ServiceProviderServicesPage = () => {
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 dark:hover:text-red-200 hover:border-red-300"
                             >
@@ -534,7 +648,7 @@ const ServiceProviderServicesPage = () => {
               </div>
             )}
           </CardContent>
-          
+
           {!loading && !error && services.length > 0 && (
             <CardFooter className="p-4 bg-slate-50 dark:bg-gray-850 border-t border-slate-200 dark:border-gray-700 flex justify-between items-center text-sm text-slate-500 dark:text-slate-400">
               <div>
@@ -564,9 +678,13 @@ const ServiceProviderServicesPage = () => {
                   uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "bookify"} // Ensure a fallback or correct preset name
                   onSuccess={handleGalleryImageUploadSuccess}
                 >
-                  <Button className="bg-white text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 shadow-sm">
+                  {/* Replace Button with a div to fix hydration error */}
+                  <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-white text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 shadow-sm px-4 py-2">
+
                     <UploadCloud className="mr-2 h-4 w-4" /> Upload Image
-                  </Button>
+
+                  </div>
+
                 </CldUploadButton>
               )}
             </div>
@@ -634,6 +752,7 @@ const ServiceProviderServicesPage = () => {
             )}
           </CardContent>
         </Card>
+
 
       </div>
     </div>

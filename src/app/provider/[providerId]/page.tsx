@@ -21,7 +21,7 @@ interface ServiceProviderData {
   fullName: string;
   email: string;
   serviceCategory: string;
-  address?: string;
+  location?: string;
   profileImageUrl?: string;
   phoneNumber?: string;
   // Optional fields often found in provider profiles
@@ -369,10 +369,10 @@ const ProviderServicePage = () => {
 
                   {/* Contact & Category Info */}
                   <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600 dark:text-slate-300 mb-4">
-                    {providerData.address && (
+                    {providerData.location && (
                       <div className="flex items-center">
                         <MapPin className="w-4 h-4 mr-1.5 text-slate-400 dark:text-slate-500" />
-                        {providerData.address}
+                        {providerData.location}
                       </div>
                     )}
                     {providerData.phoneNumber && (

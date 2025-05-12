@@ -27,7 +27,7 @@ interface ServiceProvider {
   serviceCategory: string;
   email: string;
   fullName: string;
-  address?: string;
+  location?: string;
   rating?: string;
   profileImageUrl?: string;
   reviews?: string;
@@ -93,7 +93,7 @@ const SearchPage = () => {
  if (whereQuery) {
       const lowerCaseWhereQuery = whereQuery.toLowerCase();
       tempProviders = tempProviders.filter(provider =>
- provider.address?.toLowerCase().includes(lowerCaseWhereQuery)
+ provider.location?.toLowerCase().includes(lowerCaseWhereQuery)
  );
  }
 
@@ -375,11 +375,11 @@ const SearchPage = () => {
                                 {provider.businessName}
                               </CardTitle>
 
-                              {/* Address */}
- {provider.address && (
+                              {/* location */}
+ {provider.location && (
  <div className="flex items-center text-sm text-slate-600 dark:text-slate-400 gap-1">
  <Icons.mapPin className="w-4 h-4 text-slate-400" />
- <span>{provider.address}</span>
+ <span>{provider.location}</span>
  </div>
  )}
 
