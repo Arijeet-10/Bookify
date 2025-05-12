@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast'; // Assuming this hook exists and work
 import { serviceCategories } from '@/lib/constants'; // Assuming this constant exists
 import { Icons } from '@/components/icons'; // Assuming this component exists for icons like star, alertCircle
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, MinusIcon, Trash2, Clock, MapPin, CalendarIcon, CheckCircle2, CalendarCheck, Phone } from 'lucide-react';
+import { PlusIcon, MinusIcon, Trash2, Clock, MapPin, CalendarIcon, CheckCircle2, CalendarCheck, Phone, Image as ImageIconLucide } from 'lucide-react';
 
 // Define structure for provider and service data
 interface ServiceProviderData {
@@ -27,6 +27,7 @@ interface ServiceProviderData {
   // Optional fields often found in provider profiles
   operatingHours?: string; // Example: "Mon-Fri: 9 AM - 5 PM"
   openingTime?: string; // Example: "9:00 AM - 5:00 PM"
+  closingTime?: string; // Example: "9:00 AM - 5:00 PM"
   rating?: string; // Example: "4.5"
   reviews?: string; // Example: "120" (number of reviews)
 }
@@ -137,9 +138,11 @@ const ProviderServicePage = () => {
   const getPlaceholderImage = (categoryHint: string = 'business service') => {
     // Simple hash function to get somewhat consistent random images based on hint
     let hash = 0;
-    for (let i = 0; i < categoryHint.length; i++) {
-      hash = categoryHint.charCodeAt(i) + ((hash << 5) - hash);
-      hash = hash & hash; // Convert to 32bit integer
+    if(categoryHint) {
+       for (let i = 0; i < categoryHint.length; i++) {
+        hash = categoryHint.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // Convert to 32bit integer
+      }
     }
     const width = 200 + (Math.abs(hash) % 51); // Width between 200 and 250
     const height = 200 + (Math.abs(hash >> 8) % 51); // Height between 200 and 250
@@ -183,7 +186,7 @@ const ProviderServicePage = () => {
   const parsePrice = (priceStr: string | undefined | null): number => {
     if (!priceStr) return 0;
     // Remove currency symbols, commas, and keep only numbers and decimal point
-    const numericString = priceStr.replace(/[^0-9.]/g, '');
+    const numericString = String(priceStr).replace(/[^0-9.]/g, '');
     const price = parseFloat(numericString);
     // Return the parsed price or 0 if it's not a valid number
     return isNaN(price) ? 0 : price;
@@ -338,6 +341,7 @@ const ProviderServicePage = () => {
                   style={{
                     backgroundImage: `url(${providerData.profileImageUrl || getPlaceholderImage(providerData.serviceCategory || providerData.businessName)})`,
                   }}
+                  data-ai-hint={`${providerData.serviceCategory || ''} business`}
                 >
                   {/* Dark overlay for better text contrast if needed over complex images */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -378,11 +382,14 @@ const ProviderServicePage = () => {
                       </div>
                     )}
                     {(providerData.openingTime || providerData.operatingHours) && (
- <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
- <Clock className="w-4 h-4 mr-1.5 text-slate-400 dark:text-slate-500" /><span className="mr-2">{providerData.openingTime}</span><span className="mr-1">-</span><span>{providerData.closingTime}</span>
- {providerData.operatingHours || providerData.openingTime}
- </div>
- )}
+                        <div className="flex items-center text-sm text-slate-600 dark:text-slate-300">
+                            <Clock className="w-4 h-4 mr-1.5 text-slate-400 dark:text-slate-500" />
+                            {providerData.operatingHours ? providerData.operatingHours : 
+                                (providerData.openingTime && providerData.closingTime ? `${providerData.openingTime} - ${providerData.closingTime}` : 
+                                providerData.openingTime || 'N/A')
+                            }
+                        </div>
+                    )}
                      {/* Category Badge */}
                     <Badge variant="outline" className="flex items-center gap-1.5 py-0.5 px-2 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -398,7 +405,6 @@ const ProviderServicePage = () => {
                 </div>
 
                 {/* Services List Section */}
-                {/* Add className here for scrolling */}
                 <CardContent className="p-6 pt-4 border-t border-slate-200 dark:border-slate-700/60 services-section">
                   <h2 className="text-xl font-semibold mb-4 text-slate-800 dark:text-white">Available Services</h2>
                   {loadingServices ? (
@@ -492,6 +498,17 @@ const ProviderServicePage = () => {
                     </div>
                   )}
                 </CardContent>
+                <CardFooter className="p-6 border-t border-slate-200 dark:border-slate-700/60">
+                   <Button 
+                    variant="outline" 
+                    onClick={() => router.push(`/provider/${providerId}/gallery`)}
+                    disabled={loadingProvider || !providerData}
+                    className="w-full"
+                  >
+                    <ImageIconLucide className="mr-2 h-4 w-4" />
+                    Show Service Images
+                  </Button>
+                </CardFooter>
               </Card>
             </div>
 
