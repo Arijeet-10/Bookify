@@ -14,14 +14,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2, ShieldCheck, Banknote, Bell } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, CheckCircle, User, CreditCard, ChevronLeft, Loader2, ShieldCheck, Banknote, Bell, Mail } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { sendBookingNotificationEmail } from '@/ai/flows/send-booking-notification-email-flow';
 
 // Structure for provider data
 interface ServiceProviderData {
   id: string;
   businessName: string;
   fullName: string;
+  email: string; // Ensure email is part of the provider data
 }
 
 // Structure for selected services passed via query
@@ -103,7 +105,13 @@ const BookingConfirmationPageContent = () => {
         const providerDocRef = doc(db, 'serviceProviders', providerId);
         const providerDocSnap = await getDoc(providerDocRef);
         if (providerDocSnap.exists()) {
-          setProviderData({ id: providerDocSnap.id, ...providerDocSnap.data() } as ServiceProviderData);
+          const data = providerDocSnap.data();
+          setProviderData({ 
+            id: providerDocSnap.id, 
+            businessName: data.businessName,
+            fullName: data.fullName,
+            email: data.email, // Ensure email is fetched
+          } as ServiceProviderData);
         } else {
           throw new Error("Service provider not found.");
         }
@@ -153,19 +161,13 @@ const BookingConfirmationPageContent = () => {
       toast({ title: "Error", description: "Please select a time slot.", variant: "destructive" });
       return;
     }
-    if (!providerData) {
-      toast({ title: "Error", description: "Provider data missing.", variant: "destructive" });
+    if (!providerData || !providerData.email) {
+      toast({ title: "Error", description: "Provider data or email missing.", variant: "destructive" });
       return;
     }
 
-    // If 'Pay Online' is selected, this is where you would trigger the payment gateway.
-    // For this example, we'll assume payment is successful or 'Pay at Venue' is chosen.
     if (paymentMethod === "pay_online") {
-      // TODO: Implement payment gateway integration here.
-      // For now, we'll simulate a successful payment for demonstration.
       console.log("Simulating online payment...");
-      // If payment fails, show an error toast and return.
-      // If payment succeeds, proceed to create the booking.
     }
 
     setBookingLoading(true);
@@ -184,7 +186,7 @@ const BookingConfirmationPageContent = () => {
 
       const appointmentData = {
         userId: user.uid,
-        userName: user.displayName || user.email || "Customer", // More robust fallback
+        userName: user.displayName || user.email || "Customer",
         providerId: providerId,
         providerName: providerData.businessName,
         services: selectedServices,
@@ -196,17 +198,12 @@ const BookingConfirmationPageContent = () => {
         createdAt: Timestamp.now(),
       };
 
-      console.log("Attempting to save appointment with data:", JSON.stringify(appointmentData, null, 2));
       const appointmentsRef = collection(db, 'appointments');
       const mainDocRef = await addDoc(appointmentsRef, appointmentData);
-      console.log("Main appointment document written with ID: ", mainDocRef.id);
-
 
       const userAppointmentsRef = collection(db, 'users', user.uid, 'appointments');
       await setDoc(doc(userAppointmentsRef, mainDocRef.id), appointmentData);
-      console.log(`User-specific appointment document written for user ${user.uid} with ID: ${mainDocRef.id}`);
 
-      // Create in-app notification for the service provider
       const notificationData = {
         type: 'new_booking',
         message: `New booking from ${appointmentData.userName} for ${selectedServices.map(s => s.name).join(', ')} on ${format(appointmentDateTime, 'PPP p')}.`,
@@ -218,20 +215,42 @@ const BookingConfirmationPageContent = () => {
         isRead: false,
         createdAt: Timestamp.now(),
       };
-      console.log("Attempting to save notification with data:", JSON.stringify(notificationData, null, 2));
       const providerNotificationsRef = collection(db, 'serviceProviders', providerId, 'notifications');
-      const notificationDocRef = await addDoc(providerNotificationsRef, notificationData);
-      console.log("Provider notification document written with ID: ", notificationDocRef.id);
+      await addDoc(providerNotificationsRef, notificationData);
+
+      // Send email notification to provider
+      try {
+        const emailResult = await sendBookingNotificationEmail({
+          providerEmail: providerData.email,
+          customerName: appointmentData.userName,
+          businessName: providerData.businessName,
+          serviceDetails: selectedServices.map(s => `${s.name} (${s.duration}) - ₹${s.price}`).join('\n'),
+          appointmentDateTime: format(appointmentDateTime, 'PPP p')
+        });
+        console.log("Email notification status:", emailResult.status);
+        toast({
+          title: "Provider Notified",
+          description: "An email notification has been sent to the provider.",
+          action: (
+            <div className="flex items-center">
+              <Mail className="h-5 w-5 text-green-500 mr-2" />
+              <span>Email Sent</span>
+            </div>
+          )
+        });
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError);
+        // Non-critical, so don't block booking confirmation
+        toast({
+          title: "Email Notification Failed",
+          description: "Could not send email to provider, but booking is confirmed.",
+          variant: "default" // Not destructive as booking is still made
+        });
+      }
       
       toast({
         title: "Booking Confirmed!",
-        description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed. A notification has been sent to the provider.`,
-        action: (
-          <div className="flex items-center">
-            <Bell className="h-5 w-5 text-green-500 mr-2" />
-            <span>Provider Notified</span>
-          </div>
-        )
+        description: `Your appointment with ${providerData.businessName} on ${format(appointmentDateTime, 'PPP p')} is confirmed.`,
       });
 
       router.push('/calendar');
@@ -351,7 +370,6 @@ const BookingConfirmationPageContent = () => {
               <CardContent className="bg-white dark:bg-slate-800 p-6">
                 <div className="flex items-center">
                   <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center mr-4">
-                    {/* Placeholder for provider image */}
                     <User className="h-8 w-8 text-slate-500 dark:text-slate-400" />
                   </div>
                   <div>
@@ -436,7 +454,6 @@ const BookingConfirmationPageContent = () => {
                   </div>
                 )}
                 
-                {/* THIS IS WHERE PAYMENT INTEGRATION OPTIONS WOULD GO */}
                 <div className="mt-6 space-y-3">
                   <h3 className="text-sm font-medium text-slate-900 dark:text-white flex items-center">
                     <CreditCard className="h-4 w-4 mr-2" />
@@ -456,12 +473,10 @@ const BookingConfirmationPageContent = () => {
                       </Label>
                     </div>
                   </RadioGroup>
-                   {/* Placeholder for online payment button/form */}
                    {paymentMethod === "pay_online" && (
                     <div className="mt-4">
                        <Button 
                         className="w-full bg-green-600 hover:bg-green-700 text-white"
-                        // onClick={handleInitiateOnlinePayment} // This would trigger your payment gateway
                         disabled={bookingLoading || !selectedDate || !selectedTime}
                        >
                          <CreditCard className="mr-2 h-4 w-4" /> Pay ₹{totalPrice.toFixed(2)} Now
@@ -471,7 +486,6 @@ const BookingConfirmationPageContent = () => {
                        </p>
                     </div>
                   )}
-                   {/* End of payment integration placeholder */}
                 </div>
               </CardContent>
             </Card>
@@ -488,7 +502,6 @@ const BookingConfirmationPageContent = () => {
             Back to Services
           </Button>
           
-          {/* The main confirm button's role might change if online payment is chosen first */}
           {paymentMethod === "pay_at_venue" && (
             <Button
               onClick={handleConfirmBooking}
@@ -538,4 +551,3 @@ const BookingConfirmationPage = () => {
 };
 
 export default BookingConfirmationPage;
-
