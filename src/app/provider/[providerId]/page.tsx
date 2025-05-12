@@ -23,7 +23,7 @@ interface ServiceProviderData {
   email: string;
   serviceCategory: string;
   address?: string;
-  imageURL?: string;
+  profileImageUrl?: string;
   rating?: string;
   reviews?: string;
 }
@@ -276,12 +276,18 @@ const ProviderServicePage = () => {
             {/* Main Content Column */}
             <div className="lg:col-span-2 space-y-6">
               {/* Provider Profile Card */}
-              <Card className="shadow-md dark:bg-slate-800/50 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-violet-500 h-24"></div>
+ <Card className="shadow-md dark:bg-slate-800/50 overflow-hidden">
+ <CardHeader
+ className="h-48 md:h-64 bg-cover bg-center relative"
+ style={{
+ backgroundImage: `url(${providerData.profileImageUrl || getPlaceholderImage(providerData.serviceCategory)})`,
+ }}
+ >
+ <div className="absolute inset-0 bg-black/30"></div> {/* Overlay for text readability */}
+ </CardHeader>
                 <div className="px-6 pb-6 pt-12 relative">
-                  <Avatar className="w-24 h-24 border-4 border-white dark:border-slate-800 absolute -top-12 left-1/2 -translate-x-1/2 shadow-lg">
-                    <AvatarImage
-                      src={providerData.imageURL || getPlaceholderImage(providerData.serviceCategory)}
+ {/* Position the avatar if you still want it, otherwise remove */}
+ {/* <AvatarImage
                       alt={providerData.fullName}
                       className="object-cover"
                     />
@@ -289,7 +295,7 @@ const ProviderServicePage = () => {
                       {providerData.businessName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  
+ */}
                   <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                       <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{providerData.businessName}</h1>

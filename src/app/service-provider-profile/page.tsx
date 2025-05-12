@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Label } from "@radix-ui/react-label"; // Corrected import for Label
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,12 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { updateDoc } from 'firebase/firestore';
 
+import { CldUploadWidget } from 'next-cloudinary';
+
 interface ServiceProviderData {
   businessName: string;
   serviceCategory: string;
-  address?: string; // Add the new address field
-  servicesOffered: string[]; // Or a more detailed type for services
-  // Add other service provider specific fields here
+ address?: string;
+ servicesOffered: string[];
+ profileImageUrl?: string; // Add field for profile image URL
 }
 
 export default function ServiceProviderProfilePage() {
@@ -34,6 +36,7 @@ export default function ServiceProviderProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+ // Make sure your Cloudinary cloud name is set as an environment variable: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
   const userId = user?.uid;
 
   useEffect(() => {
@@ -111,6 +114,24 @@ export default function ServiceProviderProfilePage() {
     }
   };
 
+  const handleUploadSuccess = async (result: any) => {
+    if (result.event === 'success' && userId) {
+      const imageUrl = result.info.secure_url;
+      setIsSaving(true);
+      setError(null);
+      try {
+        const docRef = doc(db, "serviceProviders", userId);
+        await updateDoc(docRef, { profileImageUrl: imageUrl });
+        setServiceProviderData(prevData => ({ ...prevData!, profileImageUrl: imageUrl }));
+      } catch (err) {
+        console.error("Error updating profile image:", err);
+        setError("Failed to update profile image.");
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
   if (loading) {
     //     <Skeleton className="h-8 w-64 mb-4" />
     //     <Card>
@@ -162,6 +183,9 @@ export default function ServiceProviderProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Service Provider Profile</CardTitle>
+ {serviceProviderData.profileImageUrl && (
+ <img src={serviceProviderData.profileImageUrl} alt="Profile" className="w-24 h-24 rounded-full object-cover mx-auto mb-4" />
+ )}
         </CardHeader>
         <CardContent className="grid gap-4">
           {isEditing ? (
@@ -204,10 +228,10 @@ export default function ServiceProviderProfilePage() {
                 <Label htmlFor="serviceCategory">Service Category:</Label>
                 <span id="serviceCategory">{serviceProviderData.serviceCategory}</span>
               </div>
- <div className="grid grid-cols-2 items-center gap-4">
- <Label htmlFor="location">Location:</Label>
- <span id="location">{serviceProviderData.address || 'N/A'}</span>
- </div>
+              <div className="grid grid-cols-2 items-center gap-4">
+                <Label htmlFor="location">Location:</Label>
+                <span id="location">{serviceProviderData.address || 'N/A'}</span>
+              </div>
               {serviceProviderData.address && (
                 <div className="grid grid-cols-2 items-center gap-4">
                   <Label htmlFor="address">Address:</Label>
@@ -226,6 +250,12 @@ export default function ServiceProviderProfilePage() {
             </ul>
           ) : (<p>No services listed yet.</p>)}
         </CardContent>
+ {/* Cloudinary Upload Widget */}
+ <div className="flex justify-center mb-4">
+ <CldUploadWidget uploadPreset="bookify" onSuccess={handleUploadSuccess}>
+ {( {open} ) => <Button onClick={(e) => { e.preventDefault(); open()}}>Upload Profile Image</Button>}
+ </CldUploadWidget>
+ </div>
         <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           {saveSuccess && (
             <span className="text-green-500 text-sm">Profile updated successfully!</span>

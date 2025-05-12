@@ -29,7 +29,7 @@ interface ServiceProvider {
   fullName: string;
   address?: string;
   rating?: string;
-  imageURL?: string;
+  profileImageUrl?: string;
   reviews?: string;
   phoneNumber?: string;
   city?: string;
@@ -352,7 +352,7 @@ const SearchPage = () => {
                 {filteredProviders.map(provider => {
                   const category = serviceCategories.find(cat => cat.id === provider.serviceCategory);
                   const aiHint = category ? `${category['data-ai-hint'] || category.name}` : 'business service';
-                  const imageSrc = provider.imageURL || getPlaceholderImage(aiHint);
+                  const imageSrc = provider.profileImageUrl || getPlaceholderImage(aiHint);
                   const lastUpdated = provider.lastUpdated?.toDate();
                   const distance = lastUpdated ? formatDistanceToNow(lastUpdated, { addSuffix: true }) : 'unknown';
                   return (
