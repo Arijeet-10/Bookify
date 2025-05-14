@@ -11,7 +11,7 @@ const Footer = () => {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: 'My Booksy', icon: Icons.home },
+    { href: '/', label: 'My Bookify', icon: Icons.home },
     { href: '/search', label: 'Search', icon: Icons.search },
     { href: '/calendar', label: 'Bookings', icon: Icons.calendar },
     { href: '/profile', label: 'Profile', icon: Icons.user },
